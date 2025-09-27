@@ -14,6 +14,7 @@
 #define 	AIN1_GND				0b101
 #define 	AIN2_GND				0b110 
 #define 	AIN3_GND				0b111
+#define 	ADS1115_BASE_ADDR		0x48
 
 float ads1115_get_voltage(int fd);
 void ads1115_trigger_conversion(int fd);
