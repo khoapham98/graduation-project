@@ -5,22 +5,21 @@
 #include "../inc/pms7003.h"
 #include <string.h>
 
-void pms7003_data_to_json(char* dest, uint8_t* src, float lat, float lon)
+void pms7003_data_to_json(char* dest, size_t size, uint8_t* src, float lat, float lon)
 {
-	int data[7] = {0};
+	int pm1_0 = src[10] << 8 | src[11]; 
+	int pm2_5 = src[12] << 8 | src[13]; 
+	int pm10 = src[14] << 8 | src[15]; 
 
-	for (int i = 1, j = 4; i < 7; i++, j += 2)
-	{
-		data[i] = src[j] << 8 | src[j + 1];
-	}
-
-	sprintf(dest, "{\n");
-	sprintf(dest + strlen(dest), "\"PM1.0\": %d,\n", data[4]);
-	sprintf(dest + strlen(dest), "\"PM2.5\": %d,\n", data[5]);
-	sprintf(dest + strlen(dest), "\"PM10\": %d,\n", data[6]);
-	sprintf(dest + strlen(dest), "\"lat\": %f,\n", lat);
-	sprintf(dest + strlen(dest), "\"lon\": %f}", lon);
-	sprintf(dest, "\n{");
+	snprintf(dest, size,
+        "{\n"
+        "  \"PM1.0\": %d,\n"
+        "  \"PM2.5\": %d,\n"
+        "  \"PM10\": %d,\n"
+        "  \"lat\": %.6f,\n"
+        "  \"lon\": %.6f\n"
+        "}",
+        pm1_0, pm2_5, pm10, lat, lon);
 }
 
 void pms7003_get_PM(uint8_t* buf)
@@ -56,6 +55,4 @@ void pms7003_read(int fd, uint8_t* rx_buf, int len)
 
 	if (ret < 0)
 		perror("read");
-	else 
-		printf("byte return: %d\n", ret);
 }
