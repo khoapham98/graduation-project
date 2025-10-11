@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <string.h>
 #include "inc/pms7003.h"
 #include "inc/uart.h"
 
@@ -43,9 +44,10 @@ void* thread2_send_to_esp(void* arg)
 		while (queue.data_rcv == 0)
 			pthread_cond_wait(&queue.cond, &queue.lock);
 		
-		char json_data[100] = {0};
+		char json_data[256] = {0};
 		pms7003_data_to_json(json_data, sizeof(json_data), queue.data, 10.1235, 123.345);
 		printf("%s\n", json_data);
+		write(uart1_fd, json_data, strlen(json_data));
 		queue.data_rcv = 0;
 		pthread_mutex_unlock(&queue.lock);
 	}

@@ -12,14 +12,17 @@ void pms7003_data_to_json(char* dest, size_t size, uint8_t* src, float lat, floa
 	int pm10 = src[14] << 8 | src[15]; 
 
 	snprintf(dest, size,
-        "{\n"
-        "  \"PM1.0\": %d,\n"
-        "  \"PM2.5\": %d,\n"
-        "  \"PM10\": %d,\n"
-        "  \"lat\": %.6f,\n"
-        "  \"lon\": %.6f\n"
-        "}",
-        pm1_0, pm2_5, pm10, lat, lon);
+		"{\"pm1_0\":%d,"
+		"\"pm2_5\":%d,"
+		"\"pm10\":%d,"
+		"\"lat\":%.6f,"
+		"\"lon\":%.6f,"
+		"\"perimeter\":[[%.6f,%.6f],[%.6f,%.6f],[%.6f,%.6f],[%.6f,%.6f]]}\n",
+		pm1_0, pm2_5, pm10, lat, lon,
+		lat + 0.00025, lon - 0.00025,
+		lat + 0.00025, lon + 0.00025,
+		lat - 0.00025, lon + 0.00025,
+		lat - 0.00025, lon - 0.00025);
 }
 
 void pms7003_get_PM(uint8_t* buf)
