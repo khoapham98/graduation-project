@@ -22,6 +22,7 @@ int uart_init(char* UART_PATH)
 	if (uart_fd < 0)
 	{
 		perror("open");
+		close(uart_fd);
 		return -1;
 	}
 

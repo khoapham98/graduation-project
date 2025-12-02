@@ -17,14 +17,6 @@
 /* thread array for manage */
 pthread_t thread[MAX_THREADS];
 
-/* UART file descriptor */
-int uart1_fd = 0;
-int uart4_fd = 0;
-
-/* check flag */
-bool dustDataReady = false;
-bool gpsDataReady = false;
-
 /* semaphore for dust data and GPS data */
 sem_t dustDataDoneSem;
 sem_t dustDataReadySem;
@@ -45,14 +37,13 @@ char json_ring_buf_data[RING_BUFFER_SIZE];
 void* updateDustDataTask(void* arg)
 {
 	while (1) {
-        if (dustDataReady) {
-            sem_wait(&dustDataDoneSem);
-        }
-
+        /* wait for dust data to finish processing */
+        sem_wait(&dustDataDoneSem);
         /* read dust sensor data */
-		readDustData(uart1_fd, dust_buf, sizeof(dust_buf));
-        // checkDustData(dust_buf);
+		readDustData(dust_buf, sizeof(dust_buf));
+        checkDustData(dust_buf);
         dustDataReady = true;
+        /* signal that dust data is ready */
         sem_post(&dustDataReadySem);
 	}
 
@@ -62,15 +53,14 @@ void* updateDustDataTask(void* arg)
 void* updateGPSTask(void* arg)
 {
 	while (1) {
-        if (gpsDataReady) {
-            sem_wait(&gpsDataDoneSem);
-        }
-
+        /* wait for gps data to finish processing */
+        sem_wait(&gpsDataDoneSem)
         /* read gps data */
-        char gps_buf[1024] = {0};
-        readGpsData((uint8_t*) gps_buf, 1024);
+        char gps_buf[NMEA_FRAME] = {0};
+        readGpsData((uint8_t*) gps_buf, NMEA_FRAME);
         printf("%s\n", gps_buf);
         gpsDataReady = true;
+        /* signal that dust data is ready */
         sem_post(&gpsDataReadySem);
 	}
 
@@ -80,13 +70,15 @@ void* updateGPSTask(void* arg)
 void* send2WebTask(void* arg)
 {
 	while (1) {
+#if 0
         /* === GPS PROCESS === */
         /* put gps data to json buffer */
         sem_wait(&gpsDataReadySem);        
         gpsDataReady = false;
         sem_post(&gpsDataDoneSem);
+#endif
 
-        #if 0
+#if 1
         /* === DUST SENSOR PROCESS === */
         /* wait for dust data is ready */
         sem_wait(&dustDataReadySem);        
@@ -98,13 +90,15 @@ void* send2WebTask(void* arg)
         /* signal that dust data has been processed */
         dustDataReady = false;
         sem_post(&dustDataDoneSem);
+#endif
         
+#if 1
         /* send to web */
         char web_buf[256] = {0};
         ring_buffer_size_t ring_buf_size = ring_buffer_num_items(&json_ring_buf);
         ring_buffer_dequeue_arr(&json_ring_buf, web_buf, ring_buf_size);
         printf("%s\n", web_buf);
-        #endif
+#endif
 	}
 
 	return arg;
@@ -112,18 +106,16 @@ void* send2WebTask(void* arg)
 
 int setupDustSensor(void) 
 {
-    /* Initialize UART1 for receiving data from sensor */
-    uart1_fd = uart_init(UART1_FILE_PATH);
-    if (uart1_fd < -1) {
-        LOG_ERR("Failed to initialize UART");
-        return -1;
-    }
+    /* Initialize Dust Sensor */
+    int err = dustSensor_init(UART1_FILE_PATH);    
+    if (err != 0)
+        return err;
 
     sem_init(&dustDataReadySem, 0, 0);
     sem_init(&dustDataDoneSem, 0, 1);
 
     /* create thread for update dust sensor data */
-    int err = pthread_create(&thread[0], NULL, updateDustDataTask, NULL);
+    err = pthread_create(&thread[0], NULL, updateDustDataTask, NULL);
     if (err != 0) 
         LOG_ERR("pthread_create: %d\n", err);
 
@@ -132,14 +124,8 @@ int setupDustSensor(void)
 
 int setupGPS(void) 
 {
-    /* Initialize UART4 for receiving data from sensor */
-    // uart4_fd = uart_init(UART1_FILE_PATH);
-    // if (uart4_fd < 0) {
-    //     LOG_ERR("Failed to initialize UART");
-    //     return -1;
-    // }
-
-    int err = GPS_init(UART1_FILE_PATH);    
+    /* Initialize GPS */
+    int err = GPS_init(UART4_FILE_PATH);    
     if (err != 0)
         return err;
 
@@ -171,15 +157,17 @@ int deviceSetup(void)
 {
     int err = 0;
 
-    #if 0
+#if 1
     err = setupDustSensor();
     if (err != 0)
         LOG_ERR("Failed to setup dust sensor\n");
-    #endif
+#endif
 
+#if 0
     err = setupGPS();
     if (err != 0)
         LOG_ERR("Failed to setup GPS\n");
+#endif
 
     err = setup4G();
     if (err != 0)

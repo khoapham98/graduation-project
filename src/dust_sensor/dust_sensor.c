@@ -9,6 +9,9 @@
 #include <string.h>
 #include "sys/log.h"
 #include "src/dust_sensor/dust_sensor.h"
+#include "src/drivers/uart.h"
+
+static int uart_fd = 0;
 
 void parseDustDataToJson(char* dest, uint8_t* src, size_t len)
 {
@@ -42,12 +45,21 @@ void checkDustData(uint8_t* buf)
 	printf("Frame length: %d bytes [%s]\n", frame_len, str[frame_len == 28]);
 }
 
-void readDustData(int fd, uint8_t* rx_buf, int len)
+void readDustData(uint8_t* buf, int len)
 {
 	if (len < DUST_DATA_FRAME) 
 		LOG_WRN("dust_sensor: May not receive data fully");
 
-	int ret = read(fd, rx_buf, len);
-	if (ret < 0)
-		perror("read");
+	readUART(uart_fd, buf, len);	
+}
+
+int dustSensor_init(char* uart_file_path)
+{
+	uart_fd = uart_init(uart_file_path);
+    if (uart_fd < 0) {
+        return -1;
+	}
+    
+	LOG_INF("Dust Sensor Initialization successful");
+	return 0;
 }

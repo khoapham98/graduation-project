@@ -12,12 +12,11 @@
 
 /**
  * @brief   read dust data 
- * @param   fd UART file descriptor
  * @param   rx_buf buffer address to store data
  * @param   len length of buffer - must be atlease 32 bytes 
  * @return  none
  *  */
-void readDustData(int fd, uint8_t* rx_buf, int len);
+void readDustData(uint8_t* buf, int len);
 
 /**
  * @brief   check dust data 
@@ -40,5 +39,7 @@ void printDustData(uint8_t* buf);
  * @return  none
  */
 void parseDustDataToJson(char* dest, uint8_t* src, size_t len);
+
+int dustSensor_init(char* uart_file_path);
 
 #endif
