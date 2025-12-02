@@ -12,12 +12,14 @@
 #include "device_setup.h"
 #include "src/drivers/uart.h"
 #include "src/dust_sensor/dust_sensor.h"
+#include "src/gps/gps.h"
 
 /* thread array for manage */
 pthread_t thread[MAX_THREADS];
 
 /* UART file descriptor */
 int uart1_fd = 0;
+int uart4_fd = 0;
 
 /* check flag */
 bool dustDataReady = false;
@@ -31,6 +33,10 @@ sem_t gpsDataReadySem;
 
 /* dust data buffer */
 uint8_t dust_buf[DUST_DATA_FRAME];
+
+/* GPS data */
+double lat;
+double lon;
 
 /* json ring buffer */
 ring_buffer_t json_ring_buf;
@@ -61,6 +67,9 @@ void* updateGPSTask(void* arg)
         }
 
         /* read gps data */
+        char gps_buf[1024] = {0};
+        readGpsData((uint8_t*) gps_buf, 1024);
+        printf("%s\n", gps_buf);
         gpsDataReady = true;
         sem_post(&gpsDataReadySem);
 	}
@@ -71,11 +80,14 @@ void* updateGPSTask(void* arg)
 void* send2WebTask(void* arg)
 {
 	while (1) {
-        // /* put gps data to json buffer */
-        // sem_wait(&gpsDataReadySem);        
-        // gpsDataReady = false;
-        // sem_post(&gpsDataDoneSem);
+        /* === GPS PROCESS === */
+        /* put gps data to json buffer */
+        sem_wait(&gpsDataReadySem);        
+        gpsDataReady = false;
+        sem_post(&gpsDataDoneSem);
 
+        #if 0
+        /* === DUST SENSOR PROCESS === */
         /* wait for dust data is ready */
         sem_wait(&dustDataReadySem);        
         /* parse dust data to json format */
@@ -92,6 +104,7 @@ void* send2WebTask(void* arg)
         ring_buffer_size_t ring_buf_size = ring_buffer_num_items(&json_ring_buf);
         ring_buffer_dequeue_arr(&json_ring_buf, web_buf, ring_buf_size);
         printf("%s\n", web_buf);
+        #endif
 	}
 
 	return arg;
@@ -99,9 +112,9 @@ void* send2WebTask(void* arg)
 
 int setupDustSensor(void) 
 {
-    /* Initialize UART1 Rx for receiving data from sensor */
+    /* Initialize UART1 for receiving data from sensor */
     uart1_fd = uart_init(UART1_FILE_PATH);
-    if (uart1_fd == -1) {
+    if (uart1_fd < -1) {
         LOG_ERR("Failed to initialize UART");
         return -1;
     }
@@ -119,13 +132,24 @@ int setupDustSensor(void)
 
 int setupGPS(void) 
 {
-    /* create thread for update gps data */
-    int err = pthread_create(&thread[1], NULL, updateGPSTask, NULL);
-    if (err != 0) 
-        LOG_ERR("pthread_create: %d\n", err);
+    /* Initialize UART4 for receiving data from sensor */
+    // uart4_fd = uart_init(UART1_FILE_PATH);
+    // if (uart4_fd < 0) {
+    //     LOG_ERR("Failed to initialize UART");
+    //     return -1;
+    // }
+
+    int err = GPS_init(UART1_FILE_PATH);    
+    if (err != 0)
+        return err;
 
     sem_init(&gpsDataReadySem, 0, 0);
     sem_init(&gpsDataDoneSem, 0, 1);
+
+    /* create thread for update gps data */
+    err = pthread_create(&thread[1], NULL, updateGPSTask, NULL);
+    if (err != 0) 
+        LOG_ERR("pthread_create: %d\n", err);
 
     return err;
 }
@@ -147,13 +171,15 @@ int deviceSetup(void)
 {
     int err = 0;
 
+    #if 0
     err = setupDustSensor();
     if (err != 0)
         LOG_ERR("Failed to setup dust sensor\n");
+    #endif
 
-    // err = setupGPS();
-    // if (err != 0)
-    //     LOG_ERR("Failed to setup GPS\n");
+    err = setupGPS();
+    if (err != 0)
+        LOG_ERR("Failed to setup GPS\n");
 
     err = setup4G();
     if (err != 0)

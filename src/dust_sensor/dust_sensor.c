@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <string.h>
 #include "sys/log.h"
-#include "../../sys/log.h"
 #include "src/dust_sensor/dust_sensor.h"
 
 void parseDustDataToJson(char* dest, uint8_t* src, size_t len)
@@ -46,7 +45,7 @@ void checkDustData(uint8_t* buf)
 void readDustData(int fd, uint8_t* rx_buf, int len)
 {
 	if (len < DUST_DATA_FRAME) 
-		LOG_WRN("dust_sensor: Cannot receive data fully");
+		LOG_WRN("dust_sensor: May not receive data fully");
 
 	int ret = read(fd, rx_buf, len);
 	if (ret < 0)

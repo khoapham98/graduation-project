@@ -4,15 +4,18 @@
  */
 #ifndef _UART_H_
 #define _UART_H_
+#include <stdint.h>
 
 /* file path of UART1 in BBB */
 #define 	UART1_FILE_PATH			"/dev/ttyS1"
+#define 	UART4_FILE_PATH			"/dev/ttyS4"
+
+void readUART(int fd, uint8_t* buf, int len);
 
 /**
- * @brief   Initialize UART 
+ * @brief   Initialize UART peripheral 
  * @param   UART_PATH is file path of UART
- * @return  uart_fd: success
- *          -1: error
+ * @return  uart fd if success; -1 otherwise
  */
 int uart_init(char* UART_PATH);
 
