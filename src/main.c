@@ -3,7 +3,6 @@
 #include <pthread.h>
 #include "sys/log.h"
 #include "device_setup.h"
-#include "src/drivers/uart.h"
 
 extern pthread_t thread[MAX_THREADS];
 

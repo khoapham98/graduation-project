@@ -42,7 +42,6 @@ void* updateDustDataTask(void* arg)
         /* read dust sensor data */
 		readDustData(dust_buf, sizeof(dust_buf));
         checkDustData(dust_buf);
-        dustDataReady = true;
         /* signal that dust data is ready */
         sem_post(&dustDataReadySem);
 	}
@@ -54,12 +53,11 @@ void* updateGPSTask(void* arg)
 {
 	while (1) {
         /* wait for gps data to finish processing */
-        sem_wait(&gpsDataDoneSem)
+        sem_wait(&gpsDataDoneSem);
         /* read gps data */
         char gps_buf[NMEA_FRAME] = {0};
         readGpsData((uint8_t*) gps_buf, NMEA_FRAME);
         printf("%s\n", gps_buf);
-        gpsDataReady = true;
         /* signal that dust data is ready */
         sem_post(&gpsDataReadySem);
 	}
@@ -70,16 +68,15 @@ void* updateGPSTask(void* arg)
 void* send2WebTask(void* arg)
 {
 	while (1) {
-#if 0
-        /* === GPS PROCESS === */
-        /* put gps data to json buffer */
+#if GPS_ENABLE
+        /* wait for gps data is ready */
         sem_wait(&gpsDataReadySem);        
-        gpsDataReady = false;
+
+        /* signal that gps data has been processed */
         sem_post(&gpsDataDoneSem);
 #endif
 
-#if 1
-        /* === DUST SENSOR PROCESS === */
+#if DUST_SENSOR_ENABLE
         /* wait for dust data is ready */
         sem_wait(&dustDataReadySem);        
         /* parse dust data to json format */
@@ -88,17 +85,14 @@ void* send2WebTask(void* arg)
         /* put dust data json format to ring buffer */
         ring_buffer_queue_arr(&json_ring_buf, dust2json_buf, strlen(dust2json_buf));
         /* signal that dust data has been processed */
-        dustDataReady = false;
         sem_post(&dustDataDoneSem);
 #endif
         
-#if 1
         /* send to web */
         char web_buf[256] = {0};
         ring_buffer_size_t ring_buf_size = ring_buffer_num_items(&json_ring_buf);
         ring_buffer_dequeue_arr(&json_ring_buf, web_buf, ring_buf_size);
         printf("%s\n", web_buf);
-#endif
 	}
 
 	return arg;
@@ -157,21 +151,23 @@ int deviceSetup(void)
 {
     int err = 0;
 
-#if 1
+#if DUST_SENSOR_ENABLE
     err = setupDustSensor();
     if (err != 0)
         LOG_ERR("Failed to setup dust sensor\n");
 #endif
 
-#if 0
+#if GPS_ENABLE
     err = setupGPS();
     if (err != 0)
         LOG_ERR("Failed to setup GPS\n");
 #endif
 
+#if ENABLE_4G
     err = setup4G();
     if (err != 0)
         LOG_ERR("Failed to setup 4G module\n");
+#endif
 
     return err;
 }
