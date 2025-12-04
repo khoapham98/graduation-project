@@ -13,10 +13,15 @@
 
 static int uart_fd = 0;
 
-void parseDustDataToJson(char* dest, uint8_t* src, size_t len)
+// void parseDustDataToJson(char* dest, uint8_t* src, size_t len)
+// {
+// 	int pm2_5 = src[12] << 8 | src[13]; 
+// 	snprintf(dest, len, "\"sensor_value\":%d", pm2_5);
+// }
+
+void getPm2_5(uint8_t* buf, uint16_t* pm2_5)
 {
-	int pm2_5 = src[12] << 8 | src[13]; 
-	snprintf(dest, len, "\"sensor_value\":%d", pm2_5);
+	*pm2_5 = buf[12] << 8 | buf[13]; 
 }
 
 void printDustData(uint8_t* buf)
