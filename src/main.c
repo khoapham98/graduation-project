@@ -6,7 +6,7 @@
 
 extern pthread_t thread[MAX_THREADS];
 
-int main()
+int main(void)
 {
 	deviceSetup();	
 
