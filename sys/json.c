@@ -28,9 +28,10 @@ void parseAllDataToJson(ring_buffer_t* rb, double lat, double lon, uint16_t pm2_
 
 void parseGpsDataToJson(ring_buffer_t* rb, double lat, double lon)
 {
-	char gps_json_buf[128] = {0};
+	char gps_json_buf[64] = {0};
 	snprintf(gps_json_buf, sizeof(gps_json_buf),
-			"\"latitude\":%lf,\"longitude\":%lf", lat, lon);
+            "{"
+			"\"latitude\":%lf,\"longitude\":%lf,", lat, lon);
 	ring_buffer_queue_arr(rb, gps_json_buf, strlen(gps_json_buf));
 }
 
@@ -38,7 +39,10 @@ void parseDustDataToJson(ring_buffer_t* rb, uint16_t pm2_5)
 {
 	char dust_json_buf[64] = {0};
 	snprintf(dust_json_buf, sizeof(dust_json_buf),
-			"\"sensor_value\":%d", pm2_5);
+            "\"altitude_m\":%d,"
+			"\"sensor_value\":%u"
+            "}", 
+            50, pm2_5);
 	ring_buffer_queue_arr(rb, dust_json_buf, strlen(dust_json_buf));
 }
 
