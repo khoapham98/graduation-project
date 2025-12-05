@@ -15,6 +15,11 @@
 #define     ENABLE_4G               1            
 #define     PARSE_EACH              0
 
+/* macros to enable log */
+#define     LOG_TO_CONSOLE          1
+#define     LOG_TO_FILE             1
+#define     LOG_FILE_PATH           "doc/app.log"
+
 /**
  * @brief   setup device 
  * @return  none
