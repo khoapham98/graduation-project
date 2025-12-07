@@ -22,6 +22,13 @@
 void readUART(int fd, uint8_t* buf, int len);
 
 /**
+ * @brief   Initialize UART for sim only 
+ * @param   UART_PATH is file path of UART
+ * @return  uart fd if success; -1 otherwise
+ */
+int uart_init_sim(char* UART_PATH);
+
+/**
  * @brief   Initialize UART peripheral 
  * @param   UART_PATH is file path of UART
  * @return  uart fd if success; -1 otherwise
