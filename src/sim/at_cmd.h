@@ -1,3 +1,7 @@
+/**
+ * @file    at_cmd.h
+ * @brief   Low-level AT command header file for UART communication
+ */
 #ifndef _AT_CMD_H_
 #define _AT_CMD_H_
 #include <stdint.h>
@@ -30,12 +34,36 @@
 #define AT_CMD_DEACTIVATE_PDP       "AT+CGACT=0,1\r\n"
 #define AT_CMD_GET_IP_ADDR          "AT+CGPADDR=1\r\n"
 
-/* AT send APIs */
+/**
+ * @brief   Send an AT command and wait for the response.
+ * @param   cmd Null-terminated AT command string (without newline).
+ * @param   timeout_ms Maximum time to wait for the response, in milliseconds.
+ * @return  0 on success (response received); -1 on error.
+ */
 int at_send_wait(char* cmd, uint64_t timeout_ms);
+
+/**
+ * @brief   Send raw data over UART without waiting for a response.
+ * @param   cmd Pointer to the data buffer to send.
+ * @param   len Number of bytes to send.
+ * @return  Number of bytes written on success; -1 on error.
+ */
 int at_send(char* cmd, size_t len);
 
+/**
+ * @brief   Read data from UART with a timeout.
+ * @param   buf Buffer to store the received data.
+ * @param   max_len Maximum number of bytes to read.
+ * @param   timeout_ms Maximum time to wait for data, in milliseconds.
+ * @return  Number of bytes read; -1 on error.
+ */
 int at_read(char* buf, size_t max_len, uint64_t timeout_ms);
 
+/**
+ * @brief   Initialize the UART interface for AT communication.
+ * @param   uart_file_path Path to the UART device (e.g. "/dev/ttyS1").
+ * @return  0 on success; -1 on error.
+ */
 int sim_init(char* uart_file_path);
 
 #endif

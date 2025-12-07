@@ -1,3 +1,7 @@
+/**
+ * @file    at_cmd.c
+ * @brief   Low-level AT command source file for UART communication
+ */
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -23,19 +27,15 @@ int at_send_wait(char* cmd, uint64_t timeout_ms)
     char resp[RESP_FRAME] = {0};
 
     int written = at_send(cmd, strlen(cmd));
-    if (written < 0) {
-        LOG_ERR("UART write failed");
+    if (written < 0) 
         return -1;
-    }
 
     int num = at_read(resp, sizeof(resp), timeout_ms);
-    if (num < 0) {
-        LOG_ERR("UART read failed");
+    if (num < 0) 
         return -1;
-    }
 
     LOG_INF("%s", resp);
-    return num;    
+    return 0;    
 }
 
 int at_send(char* cmd, size_t len)

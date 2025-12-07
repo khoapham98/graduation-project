@@ -1,3 +1,7 @@
+/**
+ * @file    sim.c
+ * @brief   High-level SIM API source file built on top of the AT command driver
+ */
 #include <stdio.h>
 #include "sys/log.h"
 #include "sim.h"

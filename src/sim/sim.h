@@ -1,3 +1,7 @@
+/**
+ * @file    sim.h
+ * @brief   High-level SIM API header file built on top of the AT command driver
+ */
 #ifndef _SIM_H_
 #define _SIM_H_
 
@@ -152,7 +156,5 @@ int simGetIpAddr(void);
  * @return none
  */
 void simInitialCheck(void);
-
-int sim_init(char* uart_file_path);
 
 #endif
