@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include "sys/log.h"
 #include "src/dust_sensor/dust_sensor.h"
 #include "src/drivers/uart.h"
@@ -46,10 +47,19 @@ void checkDustData(uint8_t* buf)
 
 void readDustData(uint8_t* buf, int len)
 {
-	if (len < DUST_DATA_FRAME) 
-		LOG_WRN("dust_sensor: May not receive data fully");
+    if (len < DUST_DATA_FRAME) 
+        LOG_WRN("dust_sensor: May not receive data fully");
 
-	readUART(uart_fd, buf, len);	
+    int total = 0;
+    while (total < len) {
+        int ret = read(uart_fd, buf + total, len - total);
+        if (ret > 0) {
+            total += ret;
+        } else if (ret < 0) {
+            LOG_ERR("Read failed: %s", strerror(errno));
+            break;
+        }
+    }
 }
 
 int dustSensor_init(char* uart_file_path)
