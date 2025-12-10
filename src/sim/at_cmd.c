@@ -15,12 +15,20 @@
 #include "drivers/uart.h"
 
 static int uart_fd = 0;
+static char* resp_ptr = NULL;
+static size_t resp_size = 0;
 
 static uint64_t now_ms()
 {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+void at_attach_resp_buffer(char* buf, size_t len)
+{
+    resp_ptr = buf;
+    resp_size = len;
 }
 
 int at_send_wait(char* cmd, uint64_t timeout_ms)

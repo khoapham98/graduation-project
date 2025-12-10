@@ -40,6 +40,14 @@
 #define AT_CMD_GET_IP_ADDR          "AT+CGPADDR=1\r\n"
 
 /**
+ * @brief   Attach an external buffer to store the next AT command response.
+ * @param   buf Pointer to the buffer to store response (or NULL to detach).
+ * @param   len Size of the buffer in bytes.
+ * @return  none
+ */
+void at_attach_resp_buffer(char* buf, size_t len);
+
+/**
  * @brief   Send an AT command and wait for the response.
  * @param   cmd Null-terminated AT command string (without newline).
  * @param   timeout_ms Maximum time to wait for the response, in milliseconds.
