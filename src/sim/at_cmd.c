@@ -43,6 +43,11 @@ int at_send_wait(char* cmd, uint64_t timeout_ms)
     if (num < 0) 
         return -1;
 
+    if (resp_ptr != NULL && resp_size > 0) {
+        int len = (strlen(resp) > resp_size) ? resp_size : strlen(resp); 
+        strncpy(resp_ptr, resp, len);
+    }
+
     LOG_INF("Send: %sResponse:%s", cmd, resp);
     return 0;    
 }
