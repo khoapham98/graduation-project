@@ -9,7 +9,6 @@
 #include "sys/log.h"
 #include "sim.h"
 #include "at_cmd.h"
-#include "src/drivers/uart.h"
 
 typedef int(*callback_t)(void);
 
@@ -161,7 +160,7 @@ int simGetIpAddr(void)
 
 int simCheckPdp(void)
 {
-    return at_send_wait(AT_CMD_CHECK_PDP_CONTEXT, 2000);
+    return at_send_wait(AT_CMD_CHECK_PDP_CONTEXT, 1000);
 }
 
 /* ===== MODULE SIM SELF-TEST ===== */
