@@ -101,7 +101,7 @@ void mqttSetTopic(void)
         return;
     }
 
-    registerTopic(message.topic);
+    sendInputData(message.topic);
 
     at_attach_resp_buffer(NULL, 0);
 }
@@ -127,7 +127,7 @@ void mqttPulishMessage(char* msg, int msg_len)
         return;
     }
 
-    inputMessage(msg);
+    sendInputData(msg);
 
     mqttPublish(client.index, message.qos, message.publishTimeout);
 

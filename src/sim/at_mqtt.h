@@ -103,10 +103,10 @@ int mqttSetPublishTopic(int index, int len);
 
 /**
  * @brief Register the MQTT topic.
- * @param topic Pointer to the MQTT topic.
+ * @param data Pointer to the data to send.
  * @return 0 on success, -1 on failure.
  */
-int registerTopic(char* topic);
+int sendInputData(char* data);
 
 /**
  * @brief Set the payload for MQTT publish.
@@ -115,13 +115,6 @@ int registerTopic(char* topic);
  * @return 0 on success, -1 on failure.
  */
 int mqttSetPayload(int index, int len);
-
-/**
- * @brief Input publish message.
- * @param msg Pointer to message. 
- * @return 0 on success, -1 on failure.
- */
-int inputMessage(char* msg);
 
 /**
  * @brief Publish a message to the MQTT server.
