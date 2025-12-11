@@ -48,6 +48,9 @@ int mqttStopService(void);
 
 /**
  * @brief Acquire an MQTT client.
+ * @param index Client index.
+ * @param id Pointer to Client ID.
+ * @param type Server type.
  * @return 0 on success, -1 on failure.
  */
 int mqttAcquireClient(int index, char* id, int type);
@@ -78,6 +81,8 @@ int mqttSetWillMessage(void);
 
 /**
  * @brief Connect to the MQTT server.
+ * @param cli Pointer to MQTT client.
+ * @param ser Pointer to MQTT server.
  * @return 0 on success, -1 on failure.
  */
 int mqttConnect(mqttClient* cli, mqttServer* ser);
@@ -90,30 +95,39 @@ int mqttDisconnect(void);
 
 /**
  * @brief Set the topic for MQTT publish.
+ * @param index Client index.
+ * @param len Topic length.
  * @return 0 on success, -1 on failure.
  */
 int mqttSetPublishTopic(int index, int len);
 
 /**
- * @brief Register publish topic.
+ * @brief Register the MQTT topic.
+ * @param topic Pointer to the MQTT topic.
  * @return 0 on success, -1 on failure.
  */
 int registerTopic(char* topic);
 
 /**
  * @brief Set the payload for MQTT publish.
+ * @param index Client index.
+ * @param len Message length.
  * @return 0 on success, -1 on failure.
  */
 int mqttSetPayload(int index, int len);
 
 /**
  * @brief Input publish message.
+ * @param msg Pointer to message. 
  * @return 0 on success, -1 on failure.
  */
 int inputMessage(char* msg);
 
 /**
  * @brief Publish a message to the MQTT server.
+ * @param index Client index.
+ * @param QoS The publish message's qos.
+ * @param pub_timeout The publishing timeout interval value.
  * @return 0 on success, -1 on failure.
  */
 int mqttPublish(int index, int QoS, int pub_timeout);
