@@ -70,7 +70,7 @@ int mqttSetPublishTopic(int index, int len)
             AT_CMD_MQTT_TOPIC,
             index, len);
 
-    return at_send_wait(cmd, 2000);
+    return at_send_wait(cmd, 200);
 }
 
 int mqttSetPayload(int index, int len)
@@ -80,7 +80,7 @@ int mqttSetPayload(int index, int len)
             AT_CMD_MQTT_PAYLOAD,
             index, len);
 
-    return at_send_wait(cmd, 2000);
+    return at_send_wait(cmd, 200);
 }
 
 int mqttPublish(int index, int QoS, int pub_timeout)
@@ -90,12 +90,12 @@ int mqttPublish(int index, int QoS, int pub_timeout)
             AT_CMD_MQTT_PUBLISH,
             index, QoS, pub_timeout);
 
-    return at_send_wait(cmd, 2000);
+    return at_send_wait(cmd, 200);
 }
 
 int sendInputData(char* data)
 {
-    return at_send_wait(data, 1000);
+    return at_send_wait(data, 100);
 }
 
 int mqttSetSubscribeTopic(void)

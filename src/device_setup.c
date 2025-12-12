@@ -26,6 +26,7 @@ sem_t dustDataDoneSem;
 sem_t dustDataReadySem;
 sem_t gpsDataDoneSem;
 sem_t gpsDataReadySem;
+sem_t jsonDataReadySem;
 
 /* dust data */
 uint16_t pm2_5 = DEFAULT_PM25;
@@ -67,6 +68,26 @@ void* updateGPSTask(void* arg)
 void* send2WebTask(void* arg)
 {
 	while (1) {
+        sem_wait(&jsonDataReadySem);
+        if (!ring_buffer_is_empty(&json_ring_buf)) {
+            char msg_buf[RING_BUFFER_SIZE] = {0};
+            getJsonData(&json_ring_buf, msg_buf);
+
+            if (strlen(msg_buf) > 100) {
+                LOG_WRN("Data package invalid (%d bytes) - skip", strlen(msg_buf));
+            } else {
+                mqttPublishMessage(msg_buf, strlen(msg_buf));
+                LOG_INF("Message published!");
+            }
+        }
+	}
+
+	return arg;
+}
+
+void* dataHandlerTask(void* arg)
+{
+	while (1) {
 #if GPS_ENABLE
         sem_wait(&gpsDataReadySem);        
         double lat = latitude;
@@ -86,9 +107,8 @@ void* send2WebTask(void* arg)
 #endif
 
         parseAllDataToJson(&json_ring_buf, lat, lon, pm25);
-        char msg_buf[256] = {0};
-        getJsonData(&json_ring_buf, msg_buf);
-        mqttPublishMessage(msg_buf, strlen(msg_buf));
+        LOG_INF("New JSON data pushed: lat = %.6f, lon = %.6f, pm25 = %d", lat, lon, pm25);
+        sem_post(&jsonDataReadySem);
 	}
 
 	return arg;
@@ -170,11 +190,28 @@ static int setupSim(void)
     return err;
 }
 
+static int setupDataHandler(void) 
+{
+    int err = pthread_create(&thread[3], NULL, dataHandlerTask, NULL);
+    if (err != 0) 
+        LOG_ERR("pthread_create: %d", err);
+    else 
+        LOG_INF("Data handler setup successfully");
+
+    return err;
+}
+
 int deviceSetup(void)
 {
     ring_buffer_init(&json_ring_buf, json_ring_buf_data, sizeof(json_ring_buf_data));
 
     int err = 0;
+
+#if SIM_ENALBE
+    err = setupSim();
+    if (err != 0)
+        LOG_ERR("Failed to setup 4G module");
+#endif
 
 #if DUST_SENSOR_ENABLE
     err = setupDustSensor();
@@ -188,9 +225,9 @@ int deviceSetup(void)
         LOG_ERR("Failed to setup GPS");
 #endif
 
-    err = setupSim();
+    err = setupDataHandler();
     if (err != 0)
-        LOG_ERR("Failed to setup 4G module");
+        LOG_ERR("Failed to setup data handler");
 
     return err;
 }
