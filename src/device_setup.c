@@ -15,6 +15,8 @@
 #include "sys/json.h"
 #include "src/sim/at_cmd.h"
 #include "src/sim/sim.h"
+#include "src/sim/mqtt.h"
+#include "src/sim/mqtt_config.h"
 
 /* thread array for manage */
 pthread_t thread[MAX_THREADS];
@@ -26,11 +28,11 @@ sem_t gpsDataDoneSem;
 sem_t gpsDataReadySem;
 
 /* dust data */
-uint16_t pm2_5;
+uint16_t pm2_5 = DEFAULT_PM25;
 
 /* GPS data */
-double latitude;
-double longitude;
+double latitude  = DEFAULT_LATITUDE;
+double longitude = DEFAULT_LONGITUDE;
 
 /* json ring buffer */
 ring_buffer_t json_ring_buf;
@@ -41,7 +43,7 @@ void* updateDustDataTask(void* arg)
 	while (1) {
         sem_wait(&dustDataDoneSem);
         uint8_t dust_buf[DUST_DATA_FRAME] = {0};
-		readDustData(dust_buf, sizeof(dust_buf));
+	    readDustData(dust_buf, sizeof(dust_buf));
         getPm2_5(dust_buf, &pm2_5);
         sem_post(&dustDataReadySem);
 	}
@@ -71,8 +73,8 @@ void* send2WebTask(void* arg)
         double lon = longitude;
         sem_post(&gpsDataDoneSem);
 #else
-        double lat = -1;
-        double lon = -1;
+        double lat = latitude;
+        double lon = longitude;
 #endif
 
 #if DUST_SENSOR_ENABLE
@@ -80,13 +82,13 @@ void* send2WebTask(void* arg)
         uint16_t pm25 = pm2_5;
         sem_post(&dustDataDoneSem);
 #else
-        uint16_t pm25 = -1;
+        uint16_t pm25 = pm2_5;
 #endif
 
         parseAllDataToJson(&json_ring_buf, lat, lon, pm25);
-        char web_buf[256] = {0};
-        getJsonData(&json_ring_buf, web_buf);
-        LOG_INF("%s", web_buf);
+        char msg_buf[256] = {0};
+        getJsonData(&json_ring_buf, msg_buf);
+        mqttPulishMessage(msg_buf, strlen(msg_buf));
 	}
 
 	return arg;
@@ -130,7 +132,37 @@ static int setupSim(void)
     if (err != 0)
         return err;
 
-    simInitialCheck();
+    simModuleInitCheck();
+    simSetup4G();
+
+    mqttClient client = {
+        .index = FIRST,
+        .ID    = MQTT_CLIENT_ID,
+        .userName = MQTT_USERNAME,
+        .password = MQTT_PASSWORD,
+        .keepAliveTime = MQTT_KEEPALIVE_600S,
+        .cleanSession  = MQTT_PERSIST_SESSION
+    };
+
+    mqttServer server = {
+        .addr = MQTT_SERVER_ADDR,
+        .type = TCP
+    };
+
+    mqttPubMsg message = {
+        .topic = MQTT_PUB_TOPIC,
+        .topicLength = strlen(message.topic),
+        .qos = MQTT_QOS_1,
+        .publishTimeout = PUBLISH_TIMEOUT_30S
+    };
+
+    mqttStartSession();
+    mqttClientInit(&client);
+    mqttServerInit(&server);
+    mqttPublishMessageConfig(&message);
+    mqttCreateClient();
+    mqttConnectBroker();
+
     err = pthread_create(&thread[2], NULL, send2WebTask, NULL);
     if (err != 0) 
         LOG_ERR("pthread_create: %d", err);
