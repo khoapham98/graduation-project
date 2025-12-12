@@ -6,7 +6,7 @@
 #define _AT_CMD_H_
 #include <stdint.h>
 
-#define RESP_FRAME                  128
+#define RESP_FRAME                  256
 
 /* SWITCH BETWEEN MODES */
 #define CMD_ENTER_CMD_MODE          "+++\r\n"

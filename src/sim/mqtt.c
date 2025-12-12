@@ -90,7 +90,7 @@ void mqttConnectBroker(void)
 
 void mqttSetTopic(void)
 {
-    char resp[128] = {0};
+    char resp[RESP_FRAME] = {0};
     at_attach_resp_buffer(resp, sizeof(resp));
 
     mqttSetPublishTopic(client.index, message.topicLength);
@@ -116,7 +116,7 @@ void mqttPublishMessage(char* msg, int msg_len)
         req_len = MESSAGE_MAX_LEN_BYTE / 2;
     }
 
-    char resp[128] = {0};
+    char resp[RESP_FRAME] = {0};
     at_attach_resp_buffer(resp, sizeof(resp));
 
     mqttSetPayload(client.index, req_len);
