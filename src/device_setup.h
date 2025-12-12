@@ -22,6 +22,16 @@
 /* select board */
 #define     BBB                     1
 #define     RPI                     0
+
+/* Default latitude and longitude values.
+ * Here set to the coordinates of Ton Duc Thang University (TDTU), Ho Chi Minh City. 
+ */
+#define     DEFAULT_LATITUDE        10.7318f 
+#define     DEFAULT_LONGITUDE       106.6981f
+
+/* Default PM2.5 value before sensor reading */
+#define     DEFAULT_PM25            0
+
 /**
  * @brief   setup device 
  * @return  none
