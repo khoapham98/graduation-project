@@ -158,7 +158,7 @@ void* dataHandlerTask(void* arg)
         pthread_mutex_lock(&jsonLock);
         parseAllDataToJson(&json_ring_buf, lat, lon, pm25);
         jsonReady = true;
-        LOG_INF("New JSON data pushed: lat = %.6f, lon = %.6f, pm25 = %d", lat, lon, pm25);
+        LOG_INF("New JSON data has been pushed");
         pthread_mutex_unlock(&jsonLock);
         pthread_cond_signal(&jsonCond);
 	}
