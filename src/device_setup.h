@@ -7,7 +7,7 @@
 
 /* system macros */
 #define 	MAX_THREADS				4
-#define     RING_BUFFER_SIZE        2048
+#define     RING_BUFFER_SIZE        8192
 
 /* macros are used to turn modules ON/OFF for testing */
 #define     DUST_SENSOR_ENABLE      1
