@@ -88,7 +88,7 @@ void simResetStatusHandler(void)
     while (1) {
         if (simCheckAlive() == PASS)
             break;
-        sleep(2);
+        sleep(1);
     }
 
     eSimResult res = mqttDisconnect(client.index, DISCONNECT_TIMEOUT_180S);
