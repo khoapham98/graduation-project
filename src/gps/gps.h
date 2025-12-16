@@ -4,7 +4,6 @@
  */
 #ifndef _GPS_H_
 #define _GPS_H_
-#include <stdio.h>
 #include <stdint.h>
 
 #define     NMEA_FRAME              1024 

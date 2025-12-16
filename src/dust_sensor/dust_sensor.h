@@ -4,9 +4,7 @@
  */
 #ifndef _PMS7003_H_
 #define _PMS7003_H_
-
 #include <stdint.h>
-#include <stdio.h>
 
 #define DUST_DATA_FRAME     32
 

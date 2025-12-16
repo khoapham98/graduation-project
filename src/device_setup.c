@@ -22,6 +22,8 @@
 /* thread array for manage */
 pthread_t thread[MAX_THREADS];
 
+/* sim state */
+extern eSimState simState;
 static const char* simStateStr[] = {
     "STATE_RESET",
     "STATE_AT_SYNC",
@@ -54,9 +56,6 @@ char json_ring_buf_data[RING_BUFFER_SIZE];
 bool jsonReady = false;
 pthread_cond_t jsonCond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t jsonLock = PTHREAD_MUTEX_INITIALIZER;
-
-extern eSimState preState;
-extern eSimState simState;
 
 void* updateDustDataTask(void* arg)
 {

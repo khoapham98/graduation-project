@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include "sys/log.h"
-#include "sys/ringbuffer.h"
 #include "src/gps/gps.h"
 #include "src/drivers/uart.h"
 
