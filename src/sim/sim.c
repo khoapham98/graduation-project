@@ -14,7 +14,7 @@ static mqttServer server = {0};
 static mqttPubMsg message = {0};
 
 eSimState preState = STATE_RESET;
-eSimState simState = STATE_AT_SYNC;
+eSimState simState = STATE_RESET;
 
 void mqttClientInit(mqttClient* cli)
 {
@@ -91,6 +91,11 @@ void simResetStatusHandler(void)
         sleep(2);
     }
 
+    eSimResult res = mqttDisconnect(client.index, DISCONNECT_TIMEOUT_180S);
+
+    if (res == PASS)
+        mqttReleaseClient(client.index);
+
     updateSimState(PASS, STATE_RESET, STATE_AT_SYNC);
 } 
 
@@ -141,8 +146,12 @@ void mqttStartStatusHandler(void)
 void mqttAccquiredStatusHandler(void)
 {
     eSimResult res = mqttAcquireClient(client.index, client.ID, server.type);
-    if (res == FAIL)
-        res = mqttReleaseClient(client.index);
+
+    if (res == FAIL) {
+        mqttDisconnect(client.index, DISCONNECT_TIMEOUT_180S);
+        mqttReleaseClient(client.index);
+        return;
+    }
 
     updateSimState(res, STATE_PDP_ACTIVE, STATE_MQTT_CONNECT);
 }
