@@ -1,6 +1,6 @@
 /**
- * @file    at_cmd.c
- * @brief   Low-level AT command source file for UART communication
+ * @file    at.c
+ * @brief   Low-level AT command source file for send AT commands & receive responses
  */
 #include <stdio.h>
 #include <stdbool.h>
@@ -11,12 +11,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include "sys/log.h"
-#include "at_cmd.h"
+#include "at.h"
 #include "drivers/uart.h"
 
 static int uart_fd = 0;
-static char* resp_ptr = NULL;
-static size_t resp_size = 0;
 
 static uint64_t now_ms()
 {
@@ -25,30 +23,17 @@ static uint64_t now_ms()
     return (uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
 
-void at_attach_resp_buffer(char* buf, size_t len)
+int at_send_wait(char* cmd, char* recv_buf, size_t len, uint64_t timeout_ms)
 {
-    resp_ptr = buf;
-    resp_size = len;
-}
-
-int at_send_wait(char* cmd, uint64_t timeout_ms)
-{
-    char resp[RESP_FRAME] = {0};
-
     int written = at_send(cmd, strlen(cmd));
     if (written < 0) 
         return -1;
 
-    int num = at_read(resp, sizeof(resp), timeout_ms);
+    int num = at_read(recv_buf, len, timeout_ms);
     if (num < 0) 
         return -1;
 
-    if (resp_ptr != NULL && resp_size > 0) {
-        int len = (strlen(resp) > resp_size) ? resp_size : strlen(resp); 
-        strncpy(resp_ptr, resp, len);
-    }
-
-    LOG_INF("Send: %s\nResponse:%s", cmd, resp);
+    LOG_INF("Send: %s\nResponse:%s", cmd, recv_buf);
     return 0;    
 }
 
@@ -121,7 +106,7 @@ int at_read(char* buf, size_t max_len, uint64_t timeout_ms)
     return idx;
 }
 
-int sim_init(char* uart_file_path)
+int sim_uart_init(char* uart_file_path)
 {
     uart_fd = uart_init(uart_file_path, true);
     if (uart_fd < 0) {
