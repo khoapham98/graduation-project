@@ -4,8 +4,10 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <unistd.h>
 #include "sys/log.h"
 #include "sys/ringbuffer.h"
 #include "device_setup.h"
@@ -13,13 +15,24 @@
 #include "src/dust_sensor/dust_sensor.h"
 #include "src/gps/gps.h"
 #include "sys/json.h"
-#include "src/sim/at_cmd.h"
+#include "src/sim/at.h"
 #include "src/sim/sim.h"
-#include "src/sim/mqtt.h"
 #include "src/sim/mqtt_config.h"
 
 /* thread array for manage */
 pthread_t thread[MAX_THREADS];
+
+static const char* simStateStr[] = {
+    "STATE_RESET",
+    "STATE_AT_SYNC",
+    "STATE_SIM_READY",
+    "STATE_NET_READY",
+    "STATE_PDP_ACTIVE",
+    "STATE_MQTT_START",
+    "STATE_MQTT_ACCQ",
+    "STATE_MQTT_CONNECT",
+    "STATE_MQTT_READY"
+};
 
 /* semaphore for dust data and GPS data */
 sem_t dustDataDoneSem;
@@ -38,6 +51,12 @@ double longitude = DEFAULT_LONGITUDE;
 /* json ring buffer */
 ring_buffer_t json_ring_buf;
 char json_ring_buf_data[RING_BUFFER_SIZE];
+bool jsonReady = false;
+pthread_cond_t jsonCond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t jsonLock = PTHREAD_MUTEX_INITIALIZER;
+
+extern eSimState preState;
+extern eSimState simState;
 
 void* updateDustDataTask(void* arg)
 {
@@ -68,17 +87,46 @@ void* updateGPSTask(void* arg)
 void* send2WebTask(void* arg)
 {
 	while (1) {
-        sem_wait(&jsonDataReadySem);
-        if (!ring_buffer_is_empty(&json_ring_buf)) {
-            char msg_buf[RING_BUFFER_SIZE] = {0};
-            getJsonData(&json_ring_buf, msg_buf);
+        LOG_INF("%s", simStateStr[simState]);
+        switch (simState)
+        {
+        case STATE_RESET:
+            simResetStatusHandler();
+            break;
+        case STATE_AT_SYNC:
+            atSyncStatusHandler();
+            break;
+        case STATE_SIM_READY:
+            simReadyStatusHandler();
+            break;
+        case STATE_NET_READY:
+            netReadyStatusHandler();
+            break;
+        case STATE_PDP_ACTIVE:
+            pdpActiveStatusHandler();
+            break;
+        case STATE_MQTT_START:
+            mqttStartStatusHandler();
+            break;
+        case STATE_MQTT_ACCQ:
+            mqttAccquiredStatusHandler();
+            break;
+        case STATE_MQTT_CONNECT:
+            mqttConnectedStatusHandler();
+            break;
+        case STATE_MQTT_READY:
+            pthread_mutex_lock(&jsonLock);
+            while (!jsonReady)
+                pthread_cond_wait(&jsonCond, &jsonLock);
 
-            if (strlen(msg_buf) > 100) {
-                LOG_WRN("Data package invalid (%d bytes) - skip", strlen(msg_buf));
-            } else {
-                mqttPublishMessage(msg_buf, strlen(msg_buf));
-                LOG_INF("Message published!");
-            }
+            char msg[RING_BUFFER_SIZE] = {0};
+            getJsonData(&json_ring_buf, msg);
+            jsonReady = false;
+            pthread_mutex_unlock(&jsonLock);
+            mqttReadyStatusHandler(msg, strlen(msg));
+            break;
+        default:
+            break;
         }
 	}
 
@@ -94,6 +142,7 @@ void* dataHandlerTask(void* arg)
         double lon = longitude;
         sem_post(&gpsDataDoneSem);
 #else
+        sleep(1);
         double lat = latitude;
         double lon = longitude;
 #endif
@@ -106,9 +155,12 @@ void* dataHandlerTask(void* arg)
         uint16_t pm25 = pm2_5;
 #endif
 
+        pthread_mutex_lock(&jsonLock);
         parseAllDataToJson(&json_ring_buf, lat, lon, pm25);
+        jsonReady = true;
         LOG_INF("New JSON data pushed: lat = %.6f, lon = %.6f, pm25 = %d", lat, lon, pm25);
-        sem_post(&jsonDataReadySem);
+        pthread_mutex_unlock(&jsonLock);
+        pthread_cond_signal(&jsonCond);
 	}
 
 	return arg;
@@ -148,12 +200,9 @@ static int setupGPS(void)
 
 static int setupSim(void) 
 {
-    int err = sim_init(UART5_FILE_PATH);    
+    int err = sim_uart_init(UART5_FILE_PATH);    
     if (err != 0)
         return err;
-
-    simModuleInitCheck();
-    simSetup4G();
 
     mqttClient client = {
         .index = FIRST,
@@ -176,12 +225,9 @@ static int setupSim(void)
         .publishTimeout = PUBLISH_TIMEOUT_30S
     };
 
-    mqttStartSession();
     mqttClientInit(&client);
     mqttServerInit(&server);
     mqttPublishMessageConfig(&message);
-    mqttCreateClient();
-    mqttConnectBroker();
 
     err = pthread_create(&thread[2], NULL, send2WebTask, NULL);
     if (err != 0) 
