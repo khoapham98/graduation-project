@@ -107,7 +107,7 @@ typedef enum mqtt_result eMqttResult;
 #define AT_CMD_MQTT_SSL_CFG          "AT+CMQTTSSLCFG\r\n"
 
 #define AT_CMD_MQTT_CONNECT          "AT+CMQTTCONNECT=%d,\"%s\",%d,%d,\"%s\",\"%s\"\r\n"
-#define AT_CMD_MQTT_DISCONNECT       "AT+CMQTTDISC\r\n"
+#define AT_CMD_MQTT_DISCONNECT       "AT+CMQTTDISC=%d,%d\r\n"
 
 #define AT_CMD_MQTT_TOPIC            "AT+CMQTTTOPIC=%d,%d\r\n"
 #define AT_CMD_MQTT_PAYLOAD          "AT+CMQTTPAYLOAD=%d,%d\r\n"
@@ -234,6 +234,16 @@ eSimResult mqttAcquireClient(int index, char* id, int type);
  *         WAIT if command send failed or response not ready.
  */
 eSimResult mqttConnect(mqttClient* cli, mqttServer* ser);
+
+/**
+ * @brief Disconnect from MQTT server.
+ * @param index Client index.
+ * @param timeout The timeout value for disconnection.
+ * @return PASS if connected successfully,
+ *         FAIL if connection failed,
+ *         WAIT if command send failed or response not ready.
+ */
+eSimResult mqttDisconnect(int index, int timeout);
 
 /**
  * @brief Set MQTT publish topic.

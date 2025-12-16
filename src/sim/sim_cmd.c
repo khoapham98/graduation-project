@@ -273,6 +273,33 @@ eSimResult mqttAcquireClient(int index, char* id, int type)
     return FAIL;
 }
 
+eSimResult mqttDisconnect(int index, int timeout)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[CMD_LEN] = {0};
+    snprintf(cmd, sizeof(cmd),
+            AT_CMD_MQTT_DISCONNECT,
+            index, timeout);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 2000) < 0)
+        return WAIT;
+
+    char* str = strstr(resp, "CMQTTDISC");
+    if (str == NULL)
+        return FAIL;
+
+    int clientIndex = -1;
+    int err = -1;
+    sscanf(str, "CMQTTDISC: %d,%d", &clientIndex, &err);
+
+    mqttLogResult(err);
+
+    if (err == MQTT_RES_OK)
+        return PASS;
+
+    return FAIL;
+}
+
 eSimResult mqttConnect(mqttClient* cli, mqttServer* ser)
 {
     char resp[RESP_FRAME] = {0};
@@ -295,7 +322,7 @@ eSimResult mqttConnect(mqttClient* cli, mqttServer* ser)
 
     mqttLogResult(err);
 
-    if (err == MQTT_RES_OK)
+    if (err == MQTT_RES_OK || err == MQTT_RES_CLIENT_USED)
         return PASS;
 
     return FAIL;

@@ -77,6 +77,11 @@ typedef struct PublishMessageConfig mqttPubMsg;
 #define     MQTT_KEEPALIVE_300S         300
 #define     MQTT_KEEPALIVE_600S         600
 
+#define     DISCONNECT_TIMEOUT_30S      30
+#define     DISCONNECT_TIMEOUT_60S      60
+#define     DISCONNECT_TIMEOUT_120S     120
+#define     DISCONNECT_TIMEOUT_180S     180
+
 #define     PUBLISH_TIMEOUT_30S         30
 #define     PUBLISH_TIMEOUT_60S         60
 #define     PUBLISH_TIMEOUT_120S        120
