@@ -11,7 +11,7 @@
 
 static int uart_fd = 0;
 static int findSubStr(char* haystack, char* needle);
-static size_t getMessageLen(char* str);
+static size_t getMessageLen(char* str, size_t len);
 
 void getGpsCoordinates(char* buf, double* latitude, double* longitude)
 {
@@ -22,8 +22,15 @@ void getGpsCoordinates(char* buf, double* latitude, double* longitude)
 	}
 
 	char new_buf[128] = {0};
-	size_t newLen = getMessageLen(&buf[firstIndex]);
-	if (newLen > sizeof(new_buf)) newLen = sizeof(new_buf);
+	size_t newLen = getMessageLen(&buf[firstIndex], strlen(&buf[firstIndex]));
+
+	if (newLen > sizeof(new_buf)) {
+		newLen = sizeof(new_buf);
+	} else if (newLen == 0) {
+		LOG_WRN("Invalid RMC message");
+		return;
+	}
+
 	strncpy(new_buf, &buf[firstIndex], newLen);
 
 	volatile int field = 1;
@@ -121,14 +128,14 @@ int GPS_uart_init(char* uart_file_path)
 	return 0;
 }
 
-static size_t getMessageLen(char* str)
+static size_t getMessageLen(char* str, size_t len)
 {
-	int index = 0;
-	while (str[index] != '\r' && str[index + 1] != '\n') {
-		index++;
+	for (int i = 0; i + 1 < len; i++) {
+		if (str[i] == '\r' && str[i + 1] == '\n')
+			return i;
 	}
 
-	return index;
+	return 0;
 }
 
 static int findSubStr(char* haystack, char* needle)
