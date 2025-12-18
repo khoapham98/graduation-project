@@ -2,7 +2,6 @@
  * @file    device_setup.c
  * @brief   setup device source file
  */
-#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>

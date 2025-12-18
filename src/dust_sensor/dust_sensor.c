@@ -2,7 +2,6 @@
  * @file    dust_sensor.c
  * @brief   PMS7003 driver source file
  */
-#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <fcntl.h>
