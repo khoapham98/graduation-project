@@ -4,6 +4,7 @@
  */
 #ifndef _MQTT_H_
 #define _MQTT_H_
+#include "fsm/fsm.h"
 
 enum ClientIndex {
     FIRST,
@@ -81,9 +82,12 @@ typedef struct PublishMessageConfig mqttPubMsg;
 #define     MQTT_QOS_1    1         // At least once 
 #define     MQTT_QOS_2    2         // Exactly once 
 
-void mqttDisconnectHandler(void);
-
-void mqttReleaseClientHandler(void);
+/**
+ * @brief Handle MQTT layer FSM based on current MQTT state.
+ * @param state Current MQTT state to be processed.
+ * @return none.
+ */
+void mqttFsmHandler(eMqttState state);
 
 /**
  * @brief Initialize an MQTT client structure with default values.
@@ -105,31 +109,5 @@ void mqttServerInit(mqttServer* ser);
  * @return none.
  */
 void mqttPublishMessageConfig(mqttPubMsg* msg);
-
-/**
- * @brief Handle MQTT service start state.
- * @return none.
- */
-void mqttStartStatusHandler(void);
-
-/**
- * @brief Handle MQTT client acquire state.
- * @return none.
- */
-void mqttAccquiredStatusHandler(void);
-
-/**
- * @brief Handle MQTT connection state.
- * @return none.
- */
-void mqttConnectedStatusHandler(void);
-
-/**
- * @brief Handle MQTT ready/data state.
- * @param msg Pointer to received message buffer.
- * @param len Length of received message.
- * @return none.
- */
-void mqttReadyStatusHandler(char* msg, int len);
 
 #endif

@@ -3,14 +3,113 @@
  * @brief   MQTT state handlers for FSM control and state transition logic
  */
 #include <string.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <pthread.h>
 #include "sys/log.h"
+#include "sys/json.h"
+#include "ringbuffer.h"
 #include "sim/sim_cmd.h"
-#include "sim/sim.h"
 #include "mqtt.h"
+#include "fsm/fsm.h"
+
+static const char* mqttStateStr[] = {
+    "MQTT_STATE_RESET",
+    "MQTT_STATE_START",
+    "MQTT_STATE_ACCQ",
+    "MQTT_STATE_CONNECT",
+    "MQTT_STATE_READY"
+};
 
 static mqttClient client = {0};
 static mqttServer server = {0};
 static mqttPubMsg message = {0};
+
+static eMqttState preState = MQTT_STATE_RESET; 
+
+extern ring_buffer_t json_ring_buf;
+extern bool jsonReady;
+extern pthread_cond_t jsonCond;
+extern pthread_mutex_t jsonLock;
+
+static void updateMqttState(eSimResult res, eMqttState backState, eMqttState nextState)
+{
+    if (res == FAIL) {
+        if (getMqttState() == MQTT_STATE_START) {
+            setFsmLayer(FSM_LAYER_SIM);
+            return;
+        }
+
+        setMqttState(preState);
+        preState = backState;
+    } 
+    else if (res == PASS) {
+        preState = getMqttState();
+        setMqttState(nextState);
+    }
+    else {
+        sleep(1);
+    }
+}
+
+static void mqttResetStatusHandler(void)
+{
+    eSimResult res = mqttDisconnect(client.index, DISCONNECT_TIMEOUT_180S);
+
+    if (res == PASS)
+        mqttReleaseClient(client.index);
+
+    updateMqttState(PASS, MQTT_STATE_RESET, MQTT_STATE_START);
+}
+
+static void mqttStartStatusHandler(void)
+{
+    eSimResult res = mqttStartService();
+    updateMqttState(res, MQTT_STATE_RESET, MQTT_STATE_ACCQ);
+}
+
+static void mqttAccquiredStatusHandler(void)
+{
+    eSimResult res = mqttAcquireClient(client.index, client.ID, server.type);
+
+    if (res != FAIL) {
+        updateMqttState(res, MQTT_STATE_RESET, MQTT_STATE_CONNECT);
+        return;
+    }
+
+    mqttDisconnect(client.index, DISCONNECT_TIMEOUT_180S);
+    mqttReleaseClient(client.index);
+    updateMqttState(FAIL, MQTT_STATE_RESET, MQTT_STATE_CONNECT);
+}
+
+static void mqttConnectedStatusHandler(void)
+{
+    eSimResult res = mqttConnect(&client, &server);
+    updateMqttState(res, MQTT_STATE_START, MQTT_STATE_READY);
+}
+
+static void mqttReadyStatusHandler(char* msg, int len)
+{
+    if (len > 100) {
+        LOG_WRN("Data package invalid (%d bytes) - skip", len);
+        return;
+    }
+
+    eSimResult res = mqttSetPublishTopic(client.index, message.topic, message.topicLength);
+    if (res != PASS)
+        goto end;
+
+    res = mqttSetPayload(client.index, msg, len);
+    if (res != PASS)
+        goto end;
+   
+    res = mqttPublish(client.index, message.qos, message.publishTimeout);
+    if (res == PASS)
+        return;
+
+end:
+    updateMqttState(res, MQTT_STATE_ACCQ, MQTT_STATE_READY);
+}
 
 void mqttClientInit(mqttClient* cli)
 {
@@ -66,61 +165,35 @@ void mqttPublishMessageConfig(mqttPubMsg* msg)
     message.publishTimeout = msg->publishTimeout;
 }
 
-void mqttStartStatusHandler(void)
+void mqttFsmHandler(eMqttState state)
 {
-    eSimResult res = mqttStartService();
-    updateSimState(res, STATE_NET_READY, STATE_MQTT_ACCQ);
-}
+    LOG_INF("%s", mqttStateStr[state]);
+    switch (state)
+    {
+    case MQTT_STATE_RESET:
+        mqttResetStatusHandler();
+        break;
+    case MQTT_STATE_START:
+        mqttStartStatusHandler();
+        break;
+    case MQTT_STATE_ACCQ:
+        mqttAccquiredStatusHandler();
+        break;
+    case MQTT_STATE_CONNECT:
+        mqttConnectedStatusHandler();
+        break;
+    case MQTT_STATE_READY:
+        pthread_mutex_lock(&jsonLock);
+        while (!jsonReady)
+            pthread_cond_wait(&jsonCond, &jsonLock);
 
-void mqttAccquiredStatusHandler(void)
-{
-    eSimResult res = mqttAcquireClient(client.index, client.ID, server.type);
-
-    if (res != FAIL) {
-        updateSimState(res, STATE_PDP_ACTIVE, STATE_MQTT_CONNECT);
-        return;
+        char msg[RING_BUFFER_SIZE] = {0};
+        getJsonData(&json_ring_buf, msg);
+        jsonReady = false;
+        pthread_mutex_unlock(&jsonLock);
+        mqttReadyStatusHandler(msg, strlen(msg));
+        break;
+    default:
+        break;
     }
-
-    mqttDisconnect(client.index, DISCONNECT_TIMEOUT_180S);
-    mqttReleaseClient(client.index);
-    updateSimState(FAIL, STATE_PDP_ACTIVE, STATE_MQTT_CONNECT);
-}
-
-void mqttConnectedStatusHandler(void)
-{
-    eSimResult res = mqttConnect(&client, &server);
-    updateSimState(res, STATE_MQTT_START, STATE_MQTT_READY);
-}
-
-void mqttReadyStatusHandler(char* msg, int len)
-{
-    if (len > 100) {
-        LOG_WRN("Data package invalid (%d bytes) - skip", len);
-        return;
-    }
-
-    eSimResult res = mqttSetPublishTopic(client.index, message.topic, message.topicLength);
-    if (res != PASS)
-        goto end;
-
-    res = mqttSetPayload(client.index, msg, len);
-    if (res != PASS)
-        goto end;
-   
-    res = mqttPublish(client.index, message.qos, message.publishTimeout);
-    if (res == PASS)
-        return;
-
-end:
-    updateSimState(res, STATE_MQTT_ACCQ, STATE_MQTT_READY);
-}
-
-void mqttDisconnectHandler(void)
-{
-    mqttDisconnect(client.index, DISCONNECT_TIMEOUT_180S);
-}
-
-void mqttReleaseClientHandler(void)
-{
-    mqttReleaseClient(client.index);
 }
