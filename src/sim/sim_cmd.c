@@ -6,7 +6,6 @@
 #include "sys/log.h"
 #include "at.h"
 #include "sim_cmd.h"
-#include "sim.h"
 #include "transport/mqtt.h"
 
 static void mqttLogResult(eMqttResult res);
