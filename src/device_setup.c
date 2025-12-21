@@ -166,7 +166,7 @@ static int setupSim(void)
         return err;
 
     http_ctx_t http = {
-        .url = HTTP_SERVER_ADDR,
+        .url = HTTP_SERVER_URL,
         .method = POST,
         .acceptType   = HTTP_ACCEPT_TYPE,
         .contentType  = HTTP_CONTENT_TYPE,
