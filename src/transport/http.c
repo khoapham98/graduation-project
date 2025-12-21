@@ -140,29 +140,30 @@ void http_context_init(http_ctx_t* http_ctx)
 
     if (http_ctx->contentType == NULL) {
         LOG_WRN("Set HTTP content type to default \"text/plain\"");
-        goto header_init;
+        goto set_accept_type;
     }
 
     if (strlen(http_ctx->contentType) > MAX_HEADER_LEN) {
         LOG_WRN("HTTP content type too long (%d bytes) - skip", strlen(http_ctx->contentType));
-        goto header_init;
+        goto set_accept_type;
     }
     ctx.contentType = http_ctx->contentType;
 
+set_accept_type:
     if (http_ctx->acceptType == NULL) {
         LOG_WRN("Set HTTP accept type to default \"*/*\"");
-        goto header_init;
+        goto set_headers;
     }
     
     if (strlen(http_ctx->acceptType) > MAX_HEADER_LEN) {
         LOG_WRN("HTTP accept type too long (%d bytes) - skip", strlen(http_ctx->acceptType));
-        goto header_init;
+        goto set_headers;
     }
     ctx.acceptType = http_ctx->acceptType;
 
-
     int cnt = 0;
-header_init:
+
+set_headers:
     for (int i = 0; i < ctx.headerCount; i++) {
         if (strlen(http_ctx->header[i]) > MAX_HEADER_LEN) {
             LOG_WRN("HTTP header too long (%d bytes) - skip", strlen(http_ctx->header[i]));
