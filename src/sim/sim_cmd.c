@@ -9,6 +9,7 @@
 #include "transport/mqtt.h"
 
 static void mqttLogResult(eMqttResult res);
+static void httpLogResult(eHttpResult res);
 
 /* ===== BASIC AT ===== */
 
@@ -198,8 +199,8 @@ eSimResult mqttStartService(void)
     if (str == NULL) 
         return FAIL;
 
-    int err = -1;
-    sscanf(str, "CMQTTSTART: %d", &err);
+    eMqttResult err = -1;
+    sscanf(str, "CMQTTSTART: %d", (int*) &err);
 
     mqttLogResult(err);
 
@@ -228,8 +229,8 @@ eSimResult mqttReleaseClient(int index)
         return FAIL;
 
     int clientIndex = -1;
-    int err = -1;
-    sscanf(str, "CMQTTREL: %d,%d", &clientIndex, &err);
+    eMqttResult err = -1;
+    sscanf(str, "CMQTTREL: %d,%d", &clientIndex, (int*) &err);
 
     mqttLogResult(err);
 
@@ -258,8 +259,8 @@ eSimResult mqttAcquireClient(int index, char* id, int type)
         return FAIL;
 
     int clientIndex = -1;
-    int err = -1;
-    sscanf(str, "CMQTTACCQ: %d,%d", &clientIndex, &err);
+    eMqttResult err = -1;
+    sscanf(str, "CMQTTACCQ: %d,%d", &clientIndex, (int*) &err);
 
     mqttLogResult(err);
 
@@ -285,8 +286,8 @@ eSimResult mqttDisconnect(int index, int timeout)
         return FAIL;
 
     int clientIndex = -1;
-    int err = -1;
-    sscanf(str, "CMQTTDISC: %d,%d", &clientIndex, &err);
+    eMqttResult err = -1;
+    sscanf(str, "CMQTTDISC: %d,%d", &clientIndex, (int*) &err);
 
     mqttLogResult(err);
 
@@ -313,8 +314,8 @@ eSimResult mqttConnect(mqttClient* cli, mqttServer* ser)
         return FAIL;
 
     int clientIndex = -1;
-    int err = -1;
-    sscanf(str, "CMQTTCONNECT: %d,%d", &clientIndex, &err);
+    eMqttResult err = -1;
+    sscanf(str, "CMQTTCONNECT: %d,%d", &clientIndex, (int*) &err);
 
     mqttLogResult(err);
 
@@ -341,8 +342,8 @@ eSimResult mqttSetPublishTopic(int index, char* topic, int len)
             return FAIL;
 
         int clientIndex = -1;
-        int err = -1;
-        sscanf(str, "CMQTTTOPIC: %d,%d", &clientIndex, &err);
+        eMqttResult err = -1;
+        sscanf(str, "CMQTTTOPIC: %d,%d", &clientIndex, (int*) &err);
 
         mqttLogResult(err);
 
@@ -383,8 +384,8 @@ eSimResult mqttSetPayload(int index, char* msg, int len)
             return FAIL;
 
         int clientIndex = -1;
-        int err = -1;
-        sscanf(str, "CMQTTPAYLOAD: %d,%d", &clientIndex, &err);
+        eMqttResult err = -1;
+        sscanf(str, "CMQTTPAYLOAD: %d,%d", &clientIndex, (int*) &err);
 
         mqttLogResult(err);
 
@@ -424,8 +425,8 @@ eSimResult mqttPublish(int index, int QoS, int pub_timeout)
         return FAIL;
 
     int clientIndex = -1;
-    int err = -1;
-    sscanf(str, "CMQTTPUB: %d,%d", &clientIndex, &err);
+    eMqttResult err = -1;
+    sscanf(str, "CMQTTPUB: %d,%d", &clientIndex, (int*) &err);
 
     if (err == MQTT_RES_OK)
         return PASS;
@@ -546,6 +547,245 @@ static void mqttLogResult(eMqttResult res)
         break;
     default:
         LOG_ERR("Unknown MQTT result (%d)", res);
+        break;
+    }
+}
+
+/* ===== HTTPS ===== */
+
+eSimResult httpStartService(void)
+{
+    char resp[RESP_FRAME] = {0};
+
+    if (at_send_wait(AT_CMD_HTTP_START, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (strstr(resp, "ERROR")) {
+        LOG_INF("HTTP service already started");
+        return PASS;
+    } else if (strstr(resp, "OK")) {
+        return PASS;
+    }
+
+    return FAIL;
+}
+
+eSimResult httpStopService(void)
+{
+    char resp[RESP_FRAME] = {0};
+
+    if (at_send_wait(AT_CMD_HTTP_STOP, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (strstr(resp, "ERROR") || strstr(resp, "OK")) 
+        return PASS;
+
+    return FAIL;
+}
+
+eSimResult httpSetUrl(const char* url)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[RESP_FRAME] = {0};
+    snprintf(cmd, sizeof(cmd), AT_CMD_HTTP_SET_URL, url);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (strstr(resp, "OK"))
+        return PASS;
+
+    return FAIL;
+}
+
+eSimResult httpSetContent(const char* content)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[RESP_FRAME] = {0};
+    snprintf(cmd, sizeof(cmd), AT_CMD_HTTP_SET_CONTENT, content);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (strstr(resp, "OK"))
+        return PASS;
+    
+    return FAIL;
+}
+
+eSimResult httpSetAccept(const char* acptType)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[RESP_FRAME] = {0};
+    snprintf(cmd, sizeof(cmd), AT_CMD_HTTP_SET_ACCEPT, acptType);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (strstr(resp, "OK"))
+        return PASS;
+    
+    return FAIL;
+}
+
+eSimResult httpSetConnectionTimeout(int timeout)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[RESP_FRAME] = {0};
+    snprintf(cmd, sizeof(cmd), AT_CMD_HTTP_SET_CONN_TIMEOUT, timeout);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (strstr(resp, "OK"))
+        return PASS;
+    
+    return FAIL;
+}
+
+eSimResult httpSetReceptionTimeout(int timeout)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[RESP_FRAME] = {0};
+    snprintf(cmd, sizeof(cmd), AT_CMD_HTTP_SET_RECV_TIMEOUT, timeout);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (strstr(resp, "OK"))
+        return PASS;
+    
+    return FAIL;
+}
+
+eSimResult httpSetSslContextId(int ctx_id)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[RESP_FRAME] = {0};
+    snprintf(cmd, sizeof(cmd), AT_CMD_HTTP_SET_SSL, ctx_id);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (strstr(resp, "OK"))
+        return PASS;
+    
+    return FAIL;
+}
+
+eSimResult httpSetCustomHeader(const char* header)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[RESP_FRAME] = {0};
+    snprintf(cmd, sizeof(cmd), AT_CMD_HTTP_SET_USER_DATA, header);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (strstr(resp, "OK"))
+        return PASS;
+    
+    return FAIL;
+}
+
+eSimResult httpSendData(char* data, int len, int time)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[RESP_FRAME] = {0};
+    snprintf(cmd, sizeof(cmd),
+            AT_CMD_HTTP_INPUT_DATA,
+            len, time);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 200) < 0)
+        return WAIT;
+
+    if (!strstr(resp, "DOWNLOAD"))
+        return FAIL;
+
+    memset(resp, 0, sizeof(resp));
+
+    if (at_send_wait(data, resp, sizeof(resp), 150) < 0)
+        return WAIT;
+   
+    if (strstr(resp, "OK"))
+        return PASS;
+
+    return FAIL;
+}
+
+eSimResult httpSendAction(int method)
+{
+    char resp[RESP_FRAME] = {0};
+    char cmd[RESP_FRAME] = {0};
+    snprintf(cmd, sizeof(cmd), AT_CMD_HTTP_SEND_ACTION, method);
+
+    if (at_send_wait(cmd, resp, sizeof(resp), 2000) < 0)
+        return WAIT;
+
+    char* str = strstr(resp, "HTTPACTION");
+    if (str == NULL)
+        return PASS;
+    
+    int _method = -1;
+    int dataLen = -1;
+    eHttpResult statusCode = -1;
+    sscanf(str, "HTTPACTION: %d,%d,%d", &_method, (int*) &statusCode, &dataLen);
+
+    httpLogResult(statusCode);
+
+    return PASS;
+}
+
+static void httpLogResult(eHttpResult res)
+{
+    switch (res) {
+    case HTTP_RES_CONTINUE:
+        LOG_INF("Continue (%d)", res);
+        break;
+    case HTTP_RES_SWITCHING_PROTOCOLS:
+        LOG_INF("Switching Protocols (%d)", res);
+        break;
+    case HTTP_RES_OK:
+        LOG_INF("OK (%d)", res);
+        break;
+    case HTTP_RES_CREATED:
+        LOG_INF("Created (%d)", res);
+        break;
+    case HTTP_RES_ACCEPTED:
+        LOG_INF("Accepted (%d)", res);
+        break;
+    case HTTP_RES_NO_CONTENT:
+        LOG_INF("No Content (%d)", res);
+        break;
+    case HTTP_RES_BAD_REQUEST:
+        LOG_ERR("Bad Request (%d)", res);
+        break;
+    case HTTP_RES_UNAUTHORIZED:
+        LOG_ERR("Unauthorized (%d)", res);
+        break;
+    case HTTP_RES_FORBIDDEN:
+        LOG_ERR("Forbidden (%d)", res);
+        break;
+    case HTTP_RES_NOT_FOUND:
+        LOG_ERR("Not Found (%d)", res);
+        break;
+    case HTTP_RES_METHOD_NOT_ALLOWED:
+        LOG_ERR("Method Not Allowed (%d)", res);
+        break;
+    case HTTP_RES_INTERNAL_ERROR:
+        LOG_ERR("Internal Server Error (%d)", res);
+        break;
+    case HTTP_RES_NOT_IMPLEMENTED:
+        LOG_ERR("Not Implemented (%d)", res);
+        break;
+    case HTTP_RES_BAD_GATEWAY:
+        LOG_ERR("Bad Gateway (%d)", res);
+        break;
+    case HTTP_RES_SERVICE_UNAVAILABLE:
+        LOG_ERR("Service Unavailable (%d)", res);
+        break;
+    default:
+        LOG_WRN("Unknown HTTP result (%d)", res);
         break;
     }
 }
