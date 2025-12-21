@@ -21,6 +21,14 @@ enum mqttState {
     MQTT_STATE_READY
 };
 
+enum httpState {
+    HTTP_STATE_START,
+    HTTP_STATE_SET_PARAM,
+    HTTP_STATE_INPUT_DATA,
+    HTTP_STATE_ACTION,
+    HTTP_STATE_STOP 
+};
+
 enum fsmLayer {
     FSM_LAYER_SIM,
     FSM_LAYER_TRANSPORT
@@ -34,6 +42,7 @@ enum transportType {
 typedef enum fsmLayer  eFsmLayer; 
 typedef enum simState  eSimState;
 typedef enum mqttState eMqttState;
+typedef enum httpState eHttpState;
 typedef enum transportType eTransportType;
 
 struct fsm_context_t
@@ -42,6 +51,7 @@ struct fsm_context_t
     eSimState simState;
     eTransportType transType;
     eMqttState mqttState;
+    eHttpState httpState;
 };
 
 typedef struct fsm_context_t fsm_ctx_t;
@@ -84,6 +94,19 @@ void setMqttState(eMqttState state);
  * @return Current MQTT state.
  */
 eMqttState getMqttState(void);
+
+/**
+ * @brief Set current HTTP state.
+ * @param state HTTP state to set.
+ * @return none.
+ */
+void setHttpState(eHttpState state);
+
+/**
+ * @brief Get current HTTP state.
+ * @return Current HTTP state.
+ */
+eHttpState getHttpState(void);
 
 /**
  * @brief Initialize FSM context and default states.
