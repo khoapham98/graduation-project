@@ -22,11 +22,9 @@ enum mqttState {
 };
 
 enum httpState {
-    HTTP_STATE_START,
-    HTTP_STATE_SET_PARAM,
-    HTTP_STATE_INPUT_DATA,
-    HTTP_STATE_ACTION,
-    HTTP_STATE_STOP 
+    HTTP_STATE_PREPARE,
+    HTTP_STATE_SEND,
+    HTTP_STATE_STOP
 };
 
 enum fsmLayer {

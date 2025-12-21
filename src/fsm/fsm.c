@@ -77,5 +77,5 @@ void fsm_context_init(void)
     ctx.transType = TRANSPORT_HTTP;
     ctx.simState  = SIM_STATE_RESET;
     ctx.mqttState = MQTT_STATE_RESET;
-    ctx.httpState = HTTP_STATE_START;
+    ctx.httpState = HTTP_STATE_PREPARE;
 }
