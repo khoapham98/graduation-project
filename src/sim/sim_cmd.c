@@ -9,7 +9,6 @@
 #include "transport/mqtt.h"
 
 static void mqttLogResult(eMqttResult res);
-static void httpLogResult(eHttpResult res);
 
 /* ===== BASIC AT ===== */
 
@@ -704,7 +703,7 @@ eSimResult httpSendData(char* data, int len, int time)
 
     memset(resp, 0, sizeof(resp));
 
-    if (at_send_wait(data, resp, sizeof(resp), 150) < 0)
+    if (at_send_wait(data, resp, sizeof(resp), 200) < 0)
         return WAIT;
    
     if (strstr(resp, "OK"))
@@ -722,70 +721,5 @@ eSimResult httpSendAction(int method)
     if (at_send_wait(cmd, resp, sizeof(resp), 2000) < 0)
         return WAIT;
 
-    char* str = strstr(resp, "HTTPACTION");
-    if (str == NULL)
-        return PASS;
-    
-    int _method = -1;
-    int dataLen = -1;
-    eHttpResult statusCode = -1;
-    sscanf(str, "HTTPACTION: %d,%d,%d", &_method, (int*) &statusCode, &dataLen);
-
-    httpLogResult(statusCode);
-
     return PASS;
-}
-
-static void httpLogResult(eHttpResult res)
-{
-    switch (res) {
-    case HTTP_RES_CONTINUE:
-        LOG_INF("Continue (%d)", res);
-        break;
-    case HTTP_RES_SWITCHING_PROTOCOLS:
-        LOG_INF("Switching Protocols (%d)", res);
-        break;
-    case HTTP_RES_OK:
-        LOG_INF("OK (%d)", res);
-        break;
-    case HTTP_RES_CREATED:
-        LOG_INF("Created (%d)", res);
-        break;
-    case HTTP_RES_ACCEPTED:
-        LOG_INF("Accepted (%d)", res);
-        break;
-    case HTTP_RES_NO_CONTENT:
-        LOG_INF("No Content (%d)", res);
-        break;
-    case HTTP_RES_BAD_REQUEST:
-        LOG_ERR("Bad Request (%d)", res);
-        break;
-    case HTTP_RES_UNAUTHORIZED:
-        LOG_ERR("Unauthorized (%d)", res);
-        break;
-    case HTTP_RES_FORBIDDEN:
-        LOG_ERR("Forbidden (%d)", res);
-        break;
-    case HTTP_RES_NOT_FOUND:
-        LOG_ERR("Not Found (%d)", res);
-        break;
-    case HTTP_RES_METHOD_NOT_ALLOWED:
-        LOG_ERR("Method Not Allowed (%d)", res);
-        break;
-    case HTTP_RES_INTERNAL_ERROR:
-        LOG_ERR("Internal Server Error (%d)", res);
-        break;
-    case HTTP_RES_NOT_IMPLEMENTED:
-        LOG_ERR("Not Implemented (%d)", res);
-        break;
-    case HTTP_RES_BAD_GATEWAY:
-        LOG_ERR("Bad Gateway (%d)", res);
-        break;
-    case HTTP_RES_SERVICE_UNAVAILABLE:
-        LOG_ERR("Service Unavailable (%d)", res);
-        break;
-    default:
-        LOG_WRN("Unknown HTTP result (%d)", res);
-        break;
-    }
 }
