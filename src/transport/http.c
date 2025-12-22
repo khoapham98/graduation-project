@@ -86,6 +86,20 @@ static void httpStopStatusHandler(void)
     setHttpState(HTTP_STATE_PREPARE);
 }
 
+bool isReadyToUpload(void)
+{
+    static int elapsedSeconds = 0;
+
+    elapsedSeconds++;
+
+    if (elapsedSeconds >= HTTP_POST_INTERVAL_SEC) {
+        elapsedSeconds = 0;
+        return true;
+    }
+
+    return false;
+}
+
 void httpFsmHandler(eHttpState state)
 {
     if (state == HTTP_STATE_PREPARE && !isHttpFsmRunning) {

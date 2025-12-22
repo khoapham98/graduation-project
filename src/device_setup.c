@@ -85,8 +85,6 @@ extern bool isHttpFsmRunning;
 
 void* dataHandlerTask(void* arg)
 {
-    static int cnt = 0;
-
 	while (1) {
 #if GPS_ENABLE
         sem_wait(&gpsDataReadySem);        
@@ -107,11 +105,7 @@ void* dataHandlerTask(void* arg)
         uint16_t pm25 = pm2_5;
 #endif
 
-        cnt++;
-        if (cnt < 5) {
-            continue;
-        }
-
+        if (!isReadyToUpload()) continue;
         pthread_mutex_lock(&jsonLock);
         parseAllDataToJson(&json_ring_buf, lat, lon, pm25);
 
@@ -121,7 +115,6 @@ void* dataHandlerTask(void* arg)
         LOG_INF("New JSON data has been pushed");
         pthread_mutex_unlock(&jsonLock);
         pthread_cond_signal(&jsonCond);
-        cnt = 0;
 	}
 
 	return arg;

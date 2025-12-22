@@ -63,6 +63,12 @@ struct http_context_t
 typedef struct http_context_t http_ctx_t;
 
 /**
+ * @brief Checks if the HTTP upload interval has elapsed.
+ * @return true if ready to push to ring buffer & start http FSM, false otherwise.
+ */
+bool isReadyToUpload(void);
+
+/**
  * @brief Handle HTTP finite state machine.
  * @param state Current HTTP FSM state.
  * @return None.
