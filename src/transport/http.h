@@ -4,9 +4,12 @@
  */
 #ifndef _HTTP_H_
 #define _HTTP_H_
+#include <stdbool.h>
 
 #define     MAX_HTTP_HEADERS        10
 #define     MAX_HEADER_LEN          256
+
+#define     HTTP_POST_INTERVAL_SEC  5
 
 enum connectionTimeout {
     HTTP_CONNECTION_TIMEOUT_20S = 20,
