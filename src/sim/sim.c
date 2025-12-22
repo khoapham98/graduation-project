@@ -8,8 +8,6 @@
 #include "sim.h"
 #include "fsm/fsm.h"
 
-static eSimState preState = SIM_STATE_RESET;
-
 static const char* simStateStr[] = {
     "SIM_STATE_RESET",
     "SIM_STATE_AT_SYNC",
@@ -18,11 +16,10 @@ static const char* simStateStr[] = {
     "SIM_STATE_PDP_ACTIVE"
 };
 
-static void updateSimState(eSimResult res, eSimState backState, eSimState nextState)
+static void updateSimState(eSimResult res, eSimState nextState)
 {
     if (res == FAIL) {
-        setSimState(preState);
-        preState = backState;
+        setSimState(SIM_STATE_RESET);
     } 
     else if (res == PASS) {
         if (getSimState() == SIM_STATE_PDP_ACTIVE) {
@@ -30,7 +27,6 @@ static void updateSimState(eSimResult res, eSimState backState, eSimState nextSt
             return;
         }
 
-        preState = getSimState();
         setSimState(nextState);
     } 
     else {
@@ -46,7 +42,7 @@ static void simResetStatusHandler(void)
         sleep(1);
     }
 
-    updateSimState(PASS, SIM_STATE_RESET, SIM_STATE_AT_SYNC);
+    updateSimState(PASS, SIM_STATE_AT_SYNC);
 } 
 
 static void atSyncStatusHandler(void)
@@ -56,19 +52,19 @@ static void atSyncStatusHandler(void)
         res = FAIL;
     }
 
-    updateSimState(res, SIM_STATE_RESET, SIM_STATE_SIM_READY);
+    updateSimState(res, SIM_STATE_SIM_READY);
 }
 
 static void simReadyStatusHandler(void)
 {
     eSimResult res = simCheckReady();
-    updateSimState(res, SIM_STATE_RESET, SIM_STATE_NET_READY);
+    updateSimState(res, SIM_STATE_NET_READY);
 }
 
 static void netReadyStatusHandler(void)
 {
     eSimResult res = simCheckRegEps();
-    updateSimState(res, SIM_STATE_AT_SYNC, SIM_STATE_PDP_ACTIVE);
+    updateSimState(res, SIM_STATE_PDP_ACTIVE);
 }
 
 static void pdpActiveStatusHandler(void)
@@ -84,7 +80,7 @@ static void pdpActiveStatusHandler(void)
     res = simActivatePdp();
 
 end:
-    updateSimState(res, SIM_STATE_SIM_READY, SIM_STATE_PDP_ACTIVE);
+    updateSimState(res, SIM_STATE_PDP_ACTIVE);
 }
 
 void simFsmHandler(eSimState state)
