@@ -11,7 +11,7 @@
 #include <fcntl.h>
 #include "sys/log.h"
 #include "at.h"
-#include "drivers/uart.h"
+#include "src/drivers/uart.h"
 
 static int uart_fd = 0;
 
@@ -107,7 +107,7 @@ int at_read(char* buf, size_t max_len, uint64_t timeout_ms)
 
 int sim_uart_init(char* uart_file_path)
 {
-    uart_fd = uart_init(uart_file_path, true);
+    uart_fd = uart_init(uart_file_path, B9600, true);
     if (uart_fd < 0) {
         return -1;
 	}

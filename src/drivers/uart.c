@@ -19,7 +19,7 @@ void readUART(int fd, uint8_t* buf, int len)
 		LOG_ERR("Read failed: %s", strerror(errno));
 }
 
-int uart_init(char* UART_PATH, bool isSim)
+int uart_init(char* UART_PATH, speed_t BR, bool isSim)
 {	
 	int uart_fd = -1;
 	if (isSim) 
@@ -35,8 +35,8 @@ int uart_init(char* UART_PATH, bool isSim)
 	struct termios uart;
 	tcgetattr(uart_fd, &uart);
 	cfmakeraw(&uart);
-	cfsetispeed(&uart, B9600);
-	cfsetospeed(&uart, B9600);
+	cfsetispeed(&uart, BR);
+	cfsetospeed(&uart, BR);
 	uart.c_cflag |= CREAD;
 	tcsetattr(uart_fd, TCSANOW, &uart);
 

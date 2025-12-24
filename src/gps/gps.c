@@ -124,113 +124,57 @@ void getGridPosition(char** key, int* row, int* col, double lat, double lon)
 	}
 }
 
-void getGpsCoordinates(char* buf, double* latitude, double* longitude)
+static void gpsHandleMavlinkMsg(mavlink_message_t *msg)
 {
-	int firstIndex = findSubStr(buf, "$GNRMC");
-	if (firstIndex < 0) {
-		LOG_ERR("Can't find RMC message from GPS");
-		return;
-	}
+    switch (msg->msgid)
+    {
+        case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+        {
+            mavlink_global_position_int_t pos;
+            mavlink_msg_global_position_int_decode(msg, &pos);
 
-	char new_buf[128] = {0};
-	size_t newLen = getMessageLen(&buf[firstIndex], strlen(&buf[firstIndex]));
+            gps_lat = pos.lat / 1e7;
+            gps_lon = pos.lon / 1e7;
+			gpsValid = true;
+            break;
+        }
 
-	if (newLen > sizeof(new_buf)) {
-		newLen = sizeof(new_buf);
-	} else if (newLen == 0) {
-		LOG_WRN("Invalid RMC message");
-		return;
-	}
-
-	strncpy(new_buf, &buf[firstIndex], newLen);
-
-	volatile int field = 1;
-	int lat_degree = 0;
-	int lon_degree = 0;
-	double lat_minute = 0;
-	double lon_minute = 0;
-	bool dataErr = false;
-
-	for (size_t i = 0; i < newLen; i++) {
-		if (new_buf[i] != ',') continue;
-
-        field++;
-        if (field > 6) break;
-
-		if (field == LATITUDE_FIELD_NUM) {
-			if (new_buf[i + 1] == ',') {
-				LOG_ERR("Invalid latitude data");
-				dataErr = true;
-				continue;
-			}
-			
-			/* get latitude data */
-			lat_degree = (new_buf[i + 1] - '0') * 10 + (new_buf[i + 2] - '0'); 			
-            float divide = 10;
-			bool isDecimal = true;
-			for (int j = i + 3; new_buf[j] != ','; j++) {
-				if (new_buf[j] == '.') {
-					isDecimal = false;
-					continue;
-				}
-
-				if (isDecimal) {
-					lat_minute *= 10;
-					lat_minute += new_buf[j] - '0';
-				} else {
-					lat_minute += (new_buf[j] - '0') / divide;	
-					divide *= 10;
-				}
-			}
-		} 
-		else if (field == LONGTITUDE_FIELD_NUM) {
-			if (new_buf[i + 1] == ',') {
-			    LOG_ERR("Invalid longitude data");
-				dataErr = true;
-				continue;
-			}
-
-			/* get longtitude data */
-			lon_degree = (new_buf[i + 1] - '0') * 100 + (new_buf[i + 2] - '0') * 10 + (new_buf[i + 3] - '0');
-			float divide = 10;
-			bool isDecimal = true;
-			for (size_t j = i + 4; new_buf[j] != ','; j++) {
-				if (new_buf[j] == '.') {
-					isDecimal = false;
-					continue;
-				}
-
-				if (isDecimal) {
-					lon_minute *= 10;
-					lon_minute += new_buf[j] - '0';
-				} else {
-					lon_minute += (new_buf[j] - '0') / divide;	
-					divide *= 10;
-				}
-			}
-		}
-	}
-
-	if (dataErr) {
-		LOG_ERR("GPS data error, keeping previous values");
-		return;
-	}
-
-	*latitude = lat_degree + (lat_minute / 60);
-	*longitude = lon_degree + (lon_minute / 60);
+        default:
+            break;
+    }
 }
 
-void readGpsData(uint8_t* buf, int len)
+void gpsReadMavlink(void)
 {
-	if (len < NMEA_FRAME) 
-		LOG_WRN("gps: May not receive data fully");
+    uint8_t byte;
+    int ret;
 
-	readUART(uart_fd, buf, len);	
+    while (1)
+    {
+        ret = read(uart_fd, &byte, 1);
+        if (ret <= 0)
+            break;
+
+        if (mavlink_parse_char(MAVLINK_COMM_0, byte, &mav_msg, &mav_status))
+        {
+            gpsHandleMavlinkMsg(&mav_msg);
+        }
+    }
+}
+
+void getGpsCoordinates(double* lat, double* lon)
+{
+	if (lat == NULL || lon == NULL || !gpsValid) 
+		return;
+
+	*lat = gps_lat;
+	*lon = gps_lon;
+	gpsValid = false;
 }
 
 int GPS_uart_init(char* uart_file_path)
 {
-	uart_fd = uart_init(uart_file_path, false);
+	uart_fd = uart_init(uart_file_path, B57600, false);
     if (uart_fd < 0) {
         return -1;
 	}

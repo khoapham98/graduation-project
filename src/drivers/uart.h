@@ -6,6 +6,7 @@
 #define _UART_H_
 #include <stdint.h>
 #include <stdbool.h>
+#include <termios.h>
 #include "device_setup.h"
 
 /* file path of UART in BBB/RPi */
@@ -18,11 +19,9 @@
 
 #elif RPI
 #define 	UART0_FILE_PATH			"/dev/ttyAMA0"
-#define 	UART1_FILE_PATH			"/dev/ttyAMA1"
-#define 	UART2_FILE_PATH			"/dev/ttyAMA2"
-#define 	UART3_FILE_PATH			"/dev/ttyAMA3"
-#define 	UART4_FILE_PATH			"/dev/ttyAMA4"
-#define 	UART5_FILE_PATH			"/dev/ttyAMA5"
+#define     USB0_FILE_PATH          "/dev/ttyUSB0"
+#define     USB1_FILE_PATH          "/dev/ttyUSB1"
+
 #endif
 
 /**
@@ -37,8 +36,9 @@ void readUART(int fd, uint8_t* buf, int len);
 /**
  * @brief   Initialize UART peripheral 
  * @param   UART_PATH is file path of UART
+ * @param   BR is baudrate
  * @return  uart fd if success; -1 otherwise
  */
-int uart_init(char* UART_PATH, bool isSim);
+int uart_init(char* UART_PATH, speed_t BR, bool isSim);
 
 #endif
