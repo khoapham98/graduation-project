@@ -95,8 +95,10 @@ eSimResult simCheckRegEps(void)
 
     if (stat == 1 || stat == 5)
         return PASS;
+    else if (stat == 3)
+        return FAIL;
 
-    return FAIL;
+    return WAIT;
 }
 
 eSimResult simSetPdpContext(void)
