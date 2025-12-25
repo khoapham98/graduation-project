@@ -47,7 +47,7 @@ void readDustData(uint8_t* buf, int len)
 
 int dustSensor_uart_init(char* uart_file_path)
 {
-	uart_fd = uart_init(uart_file_path, false);
+	uart_fd = uart_init(uart_file_path, B9600, false);
     if (uart_fd < 0) {
         return -1;
 	}
