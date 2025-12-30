@@ -35,7 +35,7 @@ sem_t gpsDataReadySem;
 sem_t jsonDataReadySem;
 
 /* dust data */
-uint16_t pm2_5 = DEFAULT_PM25;
+pm25_aqi_ctx_t ctx = {0};
 
 /* GPS data */
 double latitude  = DEFAULT_LATITUDE;
@@ -57,9 +57,8 @@ void* updateDustDataTask(void* arg)
 {
 	while (1) {
         sem_wait(&dustDataDoneSem);
-        uint8_t dust_buf[DUST_DATA_FRAME] = {0};
-	    readDustData(dust_buf, sizeof(dust_buf));
-        getPm2_5(dust_buf, &pm2_5);
+        getPm25(&ctx.pm25);
+        pm25ToAqi(&ctx);
         sem_post(&dustDataReadySem);
 	}
 
@@ -105,10 +104,10 @@ void* dataHandlerTask(void* arg)
 
 #if DUST_SENSOR_ENABLE
         sem_wait(&dustDataReadySem);        
-        uint16_t pm25 = pm2_5;
+        float aqi = ctx.aqi;
         sem_post(&dustDataDoneSem);
 #else
-        uint16_t pm25 = pm2_5;
+        uint16_t api = 0;
 #endif
 
         if (!isReadyToUpload()) continue;
@@ -116,7 +115,7 @@ void* dataHandlerTask(void* arg)
 
         getGridPosition(&locationKey, &row, &column, lat, lon);
 
-        parseAllDataToJson(&json_ring_buf, locationKey, row, column, pm25);
+        parseAllDataToJson(&json_ring_buf, locationKey, row, column, aqi);
 
         if (!isHttpFsmRunning)
             jsonReady = true;

@@ -7,14 +7,42 @@
 #include <stdint.h>
 
 #define DUST_DATA_FRAME     32
+#define AQI_LEVEL_COUNT     6
+
+enum aqiLevel{
+    AQI_GOOD,
+    AQI_MODERATE,
+    AQI_SENSITIVE,
+    AQI_UNHEALTHY,
+    AQI_VERY_UNHEALTHY,
+    AQI_HAZARDOUS
+};
+
+struct pm25_aqi_ctx{
+    int iHigh;
+    int iLow;
+    float cHigh;
+    float cLow;
+    float aqi;
+    uint16_t pm25;
+};
+
+typedef enum aqiLevel eAqiLevel;
+typedef struct pm25_aqi_ctx pm25_aqi_ctx_t;
+
+/**
+ * @brief   Convert PM2.5 concentration to AQI value.
+ * @param   ctx pointer to AQI data structure for input and output.
+ * @return  none
+ */
+void pm25ToAqi(pm25_aqi_ctx_t* ctx);
 
 /**
  * @brief   get PM2.5 value 
- * @param   buf is buffer address that contain dust sensor data
- * @param   pm2_5 is variable address to store PM2.5 value
+ * @param   pm25 is variable address to store PM2.5 value
  * @return  none
  *  */
-void getPm2_5(uint8_t* buf, uint16_t* pm2_5);
+void getPm25(uint16_t* pm25);
 
 /**
  * @brief   read dust data 
@@ -30,13 +58,6 @@ void readDustData(uint8_t* buf, int len);
  * @return  none
  */
 void checkDustData(uint8_t* buf);
-
-/**
- * @brief   print dust data
- * @param   buf buffer address
- * @return none
- */
-void printDustData(uint8_t* buf);
 
 /**
  * @brief   Initialize the UART interface for dust sensor communication

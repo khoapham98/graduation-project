@@ -20,9 +20,9 @@ void getJsonData(ring_buffer_t* rb, char* buf);
  * @param   key Site identifier string (e.g., "us" or "hs")
  * @param   row Calculated row index
  * @param   col Calculated column index
- * @param   pm2_5 PM2.5 sensor value
+ * @param   aqi Air quality index
  * @return  none
  */
-void parseAllDataToJson(ring_buffer_t* rb, char* key, int row, int col, uint16_t pm2_5);
+void parseAllDataToJson(ring_buffer_t* rb, char* key, int row, int col, float aqi);
 
 #endif

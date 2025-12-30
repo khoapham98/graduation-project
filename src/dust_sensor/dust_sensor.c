@@ -13,10 +13,61 @@
 #include "src/drivers/uart.h"
 
 static int uart_fd = 0;
+static const int aqiRanges[AQI_LEVEL_COUNT][2] = {
+    {0, 50}, 
+    {51, 100},
+    {101, 150},
+    {151, 200},
+    {201, 300},
+    {301, 500}
+};
 
-void getPm2_5(uint8_t* buf, uint16_t* pm2_5)
+static const float pm25Ranges[AQI_LEVEL_COUNT][2] = {
+    {0.0f, 12.0f},
+    {12.1f, 35.4f},
+    {35.5f, 55.4f},
+    {55.5f, 150.4f},
+    {150.5f, 250.4f},
+    {250.5f, 500.0f}
+};
+
+static eAqiLevel getPm25AqiLevel(uint16_t pm25)
 {
-	*pm2_5 = buf[12] << 8 | buf[13]; 
+    for (int i = 0; i < AQI_LEVEL_COUNT - 1; i++) {
+        if ((float) pm25 <= pm25Ranges[i][1])
+            return (eAqiLevel) i;
+    }
+
+    return AQI_HAZARDOUS;
+}
+
+void pm25ToAqi(pm25_aqi_ctx_t* ctx)
+{
+    eAqiLevel level = getPm25AqiLevel(ctx->pm25);
+
+    ctx->iLow  = aqiRanges[level][0];
+    ctx->iHigh = aqiRanges[level][1];
+    ctx->cLow  = pm25Ranges[level][0];
+    ctx->cHigh = pm25Ranges[level][1];
+
+    if (ctx->cHigh == ctx->cLow) {
+        LOG_ERR("Invalid PM2.5 breakpoint - keep previous data");
+        return;
+    }
+
+    float rangeAqi = (float) (ctx->iHigh - ctx->iLow);
+    float rangeConcentration = (float) (ctx->cHigh - ctx->cLow);
+    float concentrationDiff  = (float) (ctx->pm25 - ctx->cLow);
+
+    ctx->aqi = (rangeAqi / rangeConcentration) * concentrationDiff + (float) ctx->iLow;
+}
+
+void getPm25(uint16_t* pm25)
+{
+    uint8_t dust_buf[DUST_DATA_FRAME] = {0};
+    readDustData(dust_buf, sizeof(dust_buf));
+
+	*pm25 = dust_buf[12] << 8 | dust_buf[13]; 
 }
 
 void checkDustData(uint8_t* buf)
