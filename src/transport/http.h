@@ -10,6 +10,7 @@
 #define     MAX_HEADER_LEN          256
 
 #define     HTTP_POST_INTERVAL_SEC  5
+#define     HTTP_MAX_PAYLOAD_LEN    50
 
 enum connectionTimeout {
     HTTP_CONNECTION_TIMEOUT_20S = 20,

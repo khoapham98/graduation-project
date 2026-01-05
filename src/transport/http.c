@@ -71,7 +71,7 @@ end:
 
 static void httpSendStatusHandler(void)
 {
-    if (dataLength > 45) {
+    if (dataLength > HTTP_MAX_PAYLOAD_LEN) {
         LOG_WRN("Invalid JSON payload (%d bytes) - skip", dataLength);
         goto end;
     }
