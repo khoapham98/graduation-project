@@ -561,12 +561,8 @@ eSimResult httpStartService(void)
     if (at_send_wait(AT_CMD_HTTP_START, resp, sizeof(resp), 200) < 0)
         return WAIT;
 
-    if (strstr(resp, "ERROR")) {
-        LOG_INF("HTTP service already started");
+    if (strstr(resp, "OK"))
         return PASS;
-    } else if (strstr(resp, "OK")) {
-        return PASS;
-    }
 
     return FAIL;
 }

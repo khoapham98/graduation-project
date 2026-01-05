@@ -34,6 +34,7 @@ static void httpPrepareStatusHandler(void)
 {
     eSimResult res = httpStartService();
     if (res != PASS) {
+        httpStopService();
         setFsmLayer(FSM_LAYER_SIM);
         return;
     }
