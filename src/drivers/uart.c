@@ -19,10 +19,10 @@ void readUART(int fd, uint8_t* buf, int len)
 		LOG_ERR("Read failed: %s", strerror(errno));
 }
 
-int uart_init(char* UART_PATH, speed_t BR, bool isSim)
+int uart_init(char* UART_PATH, speed_t BR, bool nonBlock)
 {	
 	int uart_fd = -1;
-	if (isSim) 
+	if (nonBlock) 
 		uart_fd = open(UART_PATH, O_RDWR | O_NOCTTY | O_NONBLOCK);
 	 else 
 		uart_fd = open(UART_PATH, O_RDWR);

@@ -37,8 +37,9 @@ void readUART(int fd, uint8_t* buf, int len);
  * @brief   Initialize UART peripheral 
  * @param   UART_PATH is file path of UART
  * @param   BR is baudrate
+ * @param   nonBlock enable non-blocking mode if true
  * @return  uart fd if success; -1 otherwise
  */
-int uart_init(char* UART_PATH, speed_t BR, bool isSim);
+int uart_init(char* UART_PATH, speed_t BR, bool nonBlock);
 
 #endif
