@@ -72,6 +72,7 @@ void* updateGPSTask(void* arg)
         gpsReadMavlink();
         getGpsCoordinates(&latitude, &longitude);
         sem_post(&gpsDataReadySem);
+        sleep(1);
 	}
 
 	return arg;
