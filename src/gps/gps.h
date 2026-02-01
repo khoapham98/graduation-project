@@ -13,27 +13,11 @@
 #define     DEFAULT_LONGITUDE       106.6981f
 #define     DEFAULT_ALTITUDE        10
 
-#define     NMEA_FRAME              1024 
-#define     LATITUDE_FIELD_NUM      4
-#define     LONGTITUDE_FIELD_NUM    6
+// Debug flag - set to 1 to log all message IDs
+#define     GPS_DEBUG_MSG_IDS       0
 
-#define     LOCATION_TDTU           "us"
-#define     LOCATION_NHT            "hs"
-
-#define     COORD_LIMITS            2  // 0: Min, 1: Max
-#define     HS_GRID_ROWS            7
-#define     HS_GRID_COLUMNS         7
-#define     US_GRID_ROWS            17
-#define     US_GRID_COLUMNS         24
-
-#define     FIRST_IDX               0
-#define     HS_LAST_ROW_IDX         6
-#define     HS_LAST_COL_IDX         6
-#define     US_LAST_ROW_IDX         16
-#define     US_LAST_COL_IDX         23
-
-#define     MIN_BOUND   0
-#define     MAX_BOUND   1
+#define     HOVER_SPEED_THRESHOLD_CM_S      20.0
+#define     HOVER_TIME_REQUIRED_SEC         4       
 
 typedef struct {
     double lat;
@@ -42,12 +26,10 @@ typedef struct {
 } gps_ctx_t;
 
 /**
- * @brief   Get GPS coordinates
- * @param   lat is latitude address to store data
- * @param   lon is longitude address to store data
+ * @brief   Check if drone is hovering based on horizontal velocity
  * @return  none
  */
-void getGpsCoordinates(gps_ctx_t* ctx);
+bool isDroneHovering(void);
 
 /**
  * @brief   Read and parse MAVLink messages from GPS

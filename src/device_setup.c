@@ -20,9 +20,6 @@
 #include "transport/transport_config.h"
 #include "fsm/fsm.h"
 
-/* external status flag */
-extern bool isHttpFsmRunning;
-
 /* thread array for manage */
 pthread_t thread[MAX_THREADS];
 int threadCount = 0;
@@ -46,11 +43,6 @@ char json_ring_buf_data[RING_BUFFER_SIZE];
 bool jsonReady = false;
 pthread_cond_t jsonCond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t jsonLock = PTHREAD_MUTEX_INITIALIZER;
-
-/* web map position and JSON location identifier */
-int row = 0;
-int column = 0;
-char* locationKey = LOCATION_TDTU;
 
 void* updateDustDataTask(void* arg)
 {
@@ -112,9 +104,10 @@ void* dataHandlerTask(void* arg)
         float pm25 = 0;
 #endif
 
-        if (!isReadyToUpload())
+        if (!isDroneHovering())
             continue;
 
+        LOG_INF("Drone is hovering");
         pthread_mutex_lock(&jsonLock);
         parseAllDataToJson(&json_ring_buf, lat, lon, alt, pm25, aqi);
         jsonReady = true;

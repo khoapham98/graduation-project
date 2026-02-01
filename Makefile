@@ -2,7 +2,7 @@ TARGET = build/bin/app
 
 CC = gcc
 CFLAGS = -Wall -Wextra -I. -Isrc -Isys -Iext/mavlink/include -MMD -MP
-LDFLAGS = -pthread
+LDFLAGS = -pthread -lm
 
 SRC_DIRS = src sys
 OBJ_DIR = build/obj
@@ -17,7 +17,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 # rule compile .c -> .o
 $(OBJ_DIR)/%.o: %.c

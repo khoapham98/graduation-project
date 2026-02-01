@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
 #include <errno.h>
 #include "sys/log.h"
 #include "src/gps/gps.h"
@@ -20,13 +21,13 @@ gps_ctx_t gps = {
     .alt = DEFAULT_ALTITUDE
 };
 
+static int16_t vx_cm_s;
+static int16_t vy_cm_s;
+
 static bool gpsValid = false;
 
 static mavlink_message_t mav_msg;
 static mavlink_status_t  mav_status;
-
-// Debug flag - set to 1 to log all message IDs
-#define GPS_DEBUG_MSG_IDS 0
 
 static void gpsHandleMavlinkMsg(mavlink_message_t *msg)
 {
@@ -61,7 +62,13 @@ static void gpsHandleMavlinkMsg(mavlink_message_t *msg)
                 gps.lat = (double) pos.lat / 1e7;
                 gps.lon = (double) pos.lon / 1e7;
                 gps.alt = (double) pos.relative_alt / 1000.0;
-                LOG_INF("GLOBAL_POSITION_INT: lat: %.7f - lon: %.7f - alt: %.2f", gps.lat, gps.lon, gps.alt);
+                vx_cm_s = pos.vx;
+                vy_cm_s = pos.vy;
+                LOG_INF("GLOBAL_POSITION_INT: lat: %.7f - lon: %.7f - alt: %.2f", 
+                        gps.lat, gps.lon, gps.alt);
+
+                LOG_INF("GLOBAL_POSITION_INT: vx: %.2f m/s - vy: %.2f m/s", 
+                        vx_cm_s / 100.0, vy_cm_s / 100.0);
             }
 
             break;
@@ -73,6 +80,31 @@ static void gpsHandleMavlinkMsg(mavlink_message_t *msg)
 #endif
             break;
     }
+}
+
+bool isDroneHovering(void)
+{
+    static uint8_t stableCounter = 0;
+
+    if (!gpsValid) {
+        stableCounter = 0;
+        return false;
+    }
+    
+    double speed_cm_s = sqrt((double)(vx_cm_s * vx_cm_s) + 
+                            (double)(vy_cm_s * vy_cm_s));
+
+    if (speed_cm_s < HOVER_SPEED_THRESHOLD_CM_S) {
+        if (stableCounter < HOVER_TIME_REQUIRED_SEC) {
+            stableCounter++;
+            LOG_INF("Drone is stable for %d second...", stableCounter);
+        }
+    } else {
+        stableCounter = 0;
+        LOG_INF("Drone is moving...");
+    }
+
+    return (stableCounter >= HOVER_TIME_REQUIRED_SEC);
 }
 
 void gpsReadMavlink(void)
